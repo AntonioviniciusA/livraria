@@ -1,0 +1,42 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const db = require('./config/db');
+
+const authRoutes = require('./routes/auth');
+const usuariosRoutes = require('./routes/usuarios');
+const gruposRoutes = require('./routes/grupos');
+const livrosRoutes = require('./routes/livros');
+const autoresRoutes = require('./routes/autores');
+const editorasRoutes = require('./routes/editoras');
+const clientesRoutes = require('./routes/clientes');
+const pedidosRoutes = require('./routes/pedidos');
+
+const app = express();
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+
+app.get('/', (req, res) => res.json({ ok: true, service: 'livraria-backend' }));
+
+app.use('/auth', authRoutes);
+app.use('/usuarios', usuariosRoutes);
+app.use('/grupos', gruposRoutes);
+app.use('/livros', livrosRoutes);
+app.use('/autores', autoresRoutes);
+app.use('/editoras', editorasRoutes);
+app.use('/clientes', clientesRoutes);
+app.use('/pedidos', pedidosRoutes);
+
+const PORT = process.env.PORT || 3000;
+
+(async () => {
+  try {
+    await db.init();
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+})();

@@ -1,0 +1,61 @@
+## Endpoints principais
+
+Autenticação
+
+POST /auth/login
+Body: { "username": "admin", "password": "sua_senha" }
+Resposta: { "token": "JWT..." }
+
+POST /auth/register
+Body: { "username", "password", "grupo_id", "nome_completo?", "email?" }
+(Uso: criar novos usuários — em produção, apenas admins devem ter acesso a isto.)
+
+Usuários / Grupos
+
+GET /usuarios — listar usuários (autenticado; grupos: ADMIN ou LEITURA)
+
+PUT /usuarios/:id — atualizar (autenticado; grupo: ADMIN)
+
+GET /grupos — listar grupos (autenticado)
+
+Livros / Autores / Editoras
+
+GET /livros — lista (usa vw_livros_disponiveis) (autenticado)
+
+GET /livros/:id — detalhe (autenticado)
+
+POST /livros — criar (autenticado; grupos ADMIN ou ATENDIMENTO)
+
+GET /autores / POST /autores — listar/criar autores
+
+GET /editoras / POST /editoras — listar/criar editoras
+
+Clientes
+
+GET /clientes — listar (autenticado)
+
+POST /clientes — criar (autenticado; ADMIN/ATENDIMENTO)
+
+Pedidos
+
+POST /pedidos — criar pedido (autenticado; ADMIN/ATENDIMENTO)
+Body exemplo:
+ {
+  "cliente_id": 1,
+ "itens": [
+    {"livro_id": 1, "quantidade": 2},
+   {"livro_id": 2, "quantidade": 1}
+ ]
+ }
+
+Exemplos (cURL)
+
+Login:
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"sua_senha"}'
+
+  Listar livros (use token obtido no login):
+
+curl -X GET http://localhost:3000/livros \
+  -H "Authorization: Bearer <SEU_TOKEN>"
