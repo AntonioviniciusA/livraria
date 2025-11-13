@@ -8,6 +8,6 @@ const { authenticate, authorize } = require('../middleware/auth');
 router.post('/', authenticate, authorize(['ADMIN','ATENDIMENTO']), pedidosController.create);
 
 // (Opcional) listar pedidos, detalhes etc. se implementar controllers correspondentes
-// router.get('/', authenticate, authorize(['ADMIN','ATENDIMENTO']), pedidosController.list);
+router.get('/', authenticate, authorize(['ADMIN','ATENDIMENTO']), pedidosController.list);
 
 module.exports = router;

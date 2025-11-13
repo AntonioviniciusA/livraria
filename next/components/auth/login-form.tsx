@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Mail, Lock } from "lucide-react"
-
+import { login } from "@/api/auth"
 interface LoginFormProps {
   onLoadingChange: (loading: boolean) => void
   isLoading: boolean
@@ -24,16 +24,15 @@ export function LoginForm({ onLoadingChange, isLoading }: LoginFormProps) {
     setError("")
     onLoadingChange(true)
 
-    // Simulando login - em produção, conectar com backend
-    setTimeout(() => {
-      if (email && password) {
-        localStorage.setItem("user", JSON.stringify({ email, role: "admin" }))
-        router.push("/dashboard")
-      } else {
-        setError("Por favor, preencha todos os campos")
-      }
+    try {
+      const response = await login({ email, password })
       onLoadingChange(false)
-    }, 500)
+      router.refresh()
+      router.push("/admin/dashboard")
+    } catch (error) {
+      onLoadingChange(false)
+      setError("Falha ao entrar. Verifique suas credenciais.")  
+    }
   }
 
   return (
