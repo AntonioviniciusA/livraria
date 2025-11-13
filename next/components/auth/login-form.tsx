@@ -1,39 +1,40 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Mail, Lock } from "lucide-react"
-import { login } from "@/api/auth"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Mail, Lock } from "lucide-react";
+import { login } from "@/api/auth";
 interface LoginFormProps {
-  onLoadingChange: (loading: boolean) => void
-  isLoading: boolean
+  onLoadingChange: (loading: boolean) => void;
+  isLoading: boolean;
 }
 
 export function LoginForm({ onLoadingChange, isLoading }: LoginFormProps) {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const router = useRouter()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    onLoadingChange(true)
+    e.preventDefault();
+    setError("");
+    onLoadingChange(true);
 
     try {
-      const response = await login({ email, password })
-      onLoadingChange(false)
-      router.refresh()
-      router.push("/admin/dashboard")
+      const response = await login(email, password);
+
+      onLoadingChange(false);
+      router.refresh();
+      router.push("/dashboard");
     } catch (error) {
-      onLoadingChange(false)
-      setError("Falha ao entrar. Verifique suas credenciais.")  
+      onLoadingChange(false);
+      setError("Falha ao entrar. Verifique suas credenciais.");
     }
-  }
+  };
 
   return (
     <form onSubmit={handleLogin} className="space-y-4">
@@ -77,7 +78,9 @@ export function LoginForm({ onLoadingChange, isLoading }: LoginFormProps) {
         {isLoading ? "Entrando..." : "Entrar"}
       </Button>
 
-      <p className="text-center text-slate-400 text-sm">Apenas administradores podem acessar</p>
+      <p className="text-center text-slate-400 text-sm">
+        Apenas administradores podem acessar
+      </p>
     </form>
-  )
+  );
 }

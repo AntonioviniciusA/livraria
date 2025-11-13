@@ -1,8 +1,9 @@
-const db = require('../config/db');
+const db = require("../config/db");
 
 async function create(req, res) {
   const { cliente_id, itens } = req.body;
-  if (!cliente_id || !Array.isArray(itens) || itens.length === 0) return res.status(400).json({ error: 'cliente_id and itens required' });
+  if (!cliente_id || !Array.isArray(itens) || itens.length === 0)
+    return res.status(400).json({ error: "cliente_id and itens required" });
 
   const conn = await db.getPool().getConnection();
   try {
@@ -12,28 +13,49 @@ async function create(req, res) {
     const [r] = await conn.query("SELECT fn_gen_id('PED') as num");
     const numero_negocio = r[0].num;
 
-    const [ins] = await conn.query('INSERT INTO pedidos (numero_negocio, cliente_id, usuario_id, total) VALUES (?,?,?,?)', [numero_negocio, cliente_id, req.user.id, 0.00]);
+    const [ins] = await conn.query(
+      "INSERT INTO pedidos (numero_negocio, cliente_id, usuario_id, total) VALUES (?,?,?,?)",
+      [numero_negocio, cliente_id, req.user.id, 0.0]
+    );
     const pedido_id = ins.insertId;
 
     let total = 0.0;
 
     for (const it of itens) {
-      const [bookRows] = await conn.query('SELECT preco FROM livros WHERE id = ? FOR UPDATE', [it.livro_id]);
-      if (bookRows.length === 0) throw new Error(`Livro ${it.livro_id} not found`);
+      const [bookRows] = await conn.query(
+        "SELECT preco FROM livros WHERE id = ? FOR UPDATE",
+        [it.livro_id]
+      );
+      if (bookRows.length === 0)
+        throw new Error(`Livro ${it.livro_id} not found`);
       const preco = bookRows[0].preco;
 
-      const [stockRows] = await conn.query('SELECT quantidade FROM estoque WHERE livro_id = ? FOR UPDATE', [it.livro_id]);
-      if (stockRows.length === 0) throw new Error(`Estoque não encontrado para livro ${it.livro_id}`);
+      const [stockRows] = await conn.query(
+        "SELECT quantidade FROM estoque WHERE livro_id = ? FOR UPDATE",
+        [it.livro_id]
+      );
+      if (stockRows.length === 0)
+        throw new Error(`Estoque não encontrado para livro ${it.livro_id}`);
       const available = stockRows[0].quantidade;
-      if (available < it.quantidade) throw new Error(`Estoque insuficiente para livro ${it.livro_id}`);
+      if (available < it.quantidade)
+        throw new Error(`Estoque insuficiente para livro ${it.livro_id}`);
 
-      await conn.query('INSERT INTO pedidos_itens (pedido_id, livro_id, quantidade, preco_unitario) VALUES (?,?,?,?)', [pedido_id, it.livro_id, it.quantidade, preco]);
-      await conn.query('UPDATE estoque SET quantidade = quantidade - ? WHERE livro_id = ?', [it.quantidade, it.livro_id]);
+      await conn.query(
+        "INSERT INTO pedidos_itens (pedido_id, livro_id, quantidade, preco_unitario) VALUES (?,?,?,?)",
+        [pedido_id, it.livro_id, it.quantidade, preco]
+      );
+      await conn.query(
+        "UPDATE estoque SET quantidade = quantidade - ? WHERE livro_id = ?",
+        [it.quantidade, it.livro_id]
+      );
 
       total += preco * it.quantidade;
     }
 
-    await conn.query('UPDATE pedidos SET total = ? WHERE id = ?', [total, pedido_id]);
+    await conn.query("UPDATE pedidos SET total = ? WHERE id = ?", [
+      total,
+      pedido_id,
+    ]);
 
     await conn.commit();
 
@@ -47,4 +69,8 @@ async function create(req, res) {
   }
 }
 
-module.exports = { create };
+async function list(req, res) {
+  const [rows] = await db.getPool().query("SELECT * FROM pedidos");
+  res.status(200).json(rows);
+}
+module.exports = { create, list };
