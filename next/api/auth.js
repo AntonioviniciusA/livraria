@@ -1,9 +1,25 @@
 import { api } from "./api";
 
-export const login = async (email, password) => {
+export const login = async (username, password) => {
   const response = await api.post("/auth/login", {
-    email,
+    username,
     password,
   });
+  return response.data;
+};
+
+export const register = async (
+  username,
+  password,
+  fullName,
+  email,
+  groupId
+) => {
+  const response = await api.post("/auth/register");
+  return response.data;
+};
+
+export const logout = async () => {
+  const response = await api.post("/auth/logout");
   return response.data;
 };

@@ -14,7 +14,7 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onLoadingChange, isLoading }: LoginFormProps) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
@@ -25,8 +25,10 @@ export function LoginForm({ onLoadingChange, isLoading }: LoginFormProps) {
     onLoadingChange(true);
 
     try {
-      const response = await login(email, password);
-
+      const response = await login(username, password);
+      console.info(response);
+      console.log("username", username);
+      console.log("password", password);
       onLoadingChange(false);
       router.refresh();
       router.push("/dashboard");
@@ -45,8 +47,8 @@ export function LoginForm({ onLoadingChange, isLoading }: LoginFormProps) {
           <Input
             type="email"
             placeholder="seu@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             className="pl-10 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
             disabled={isLoading}
           />

@@ -1,30 +1,32 @@
 const db = require("../config/db");
-const hash = require("../utils/hash");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 
 const secret = process.env.JWT_SECRET || "secret_dev";
 const expiresIn = process.env.JWT_EXPIRES_IN || "8h";
 
 async function login(req, res) {
   const { username, password } = req.body;
+  console.log("username", username);
+  console.log("password", password);
   if (!username || !password)
     return res.status(400).json({ error: "username & password required" });
   try {
     const [rows] = await db
       .getPool()
-      .query(
-        "SELECT id, username, senha_hash FROM usuarios WHERE username = ?",
-        [username]
-      );
+      .query("SELECT id, username, senha_hash FROM usuarios WHERE email = ?", [
+        username,
+      ]);
     if (rows.length === 0)
       return res.status(401).json({ error: "Invalid credentials" });
     const user = rows[0];
-    const ok = await hash.compare(password, user.senha_hash);
+    const ok = await bcrypt.compare(password, user.senha_hash);
     if (!ok) return res.status(401).json({ error: "Invalid credentials" });
     const token = jwt.sign({ uid: user.id, username: user.username }, secret, {
       expiresIn,
     });
-    res.setCookie("token", token, {
+
+    res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: expiresIn * 1000,
@@ -44,7 +46,7 @@ async function register(req, res) {
       .status(400)
       .json({ error: "username,password,grupo_id required" });
   try {
-    const senha_hash = await hash.hash(password);
+    const senha_hash = await bcrypt.hash(password, 10);
     const [result] = await db
       .getPool()
       .query(
