@@ -29,7 +29,7 @@ async function login(req, res) {
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: expiresIn * 1000,
+      maxAge: (Number(expiresIn) || 3600) * 1000, // 1 hora padrão
       sameSite: "strict",
     });
     res.status(200).json({ message: "Login successful" });
