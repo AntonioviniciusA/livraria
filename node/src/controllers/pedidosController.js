@@ -2,6 +2,12 @@ const db = require("../config/db");
 
 async function create(req, res) {
   const { cliente_id, itens } = req.body;
+  console.log(
+    "Creating order for cliente_id:",
+    cliente_id,
+    "with items:",
+    itens
+  );
   if (!cliente_id || !Array.isArray(itens) || itens.length === 0)
     return res.status(400).json({ error: "cliente_id and itens required" });
 

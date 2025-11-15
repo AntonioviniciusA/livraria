@@ -4,23 +4,31 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { CustomerList } from "@/components/customers/customer-list"
+import { CustomerForm } from "@/components/customers/customer-form"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
+import { getUserProfile, getToken } from "@/api/auth" 
 
 export default function ClientesPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [showForm, setShowForm] = useState(false)
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (!userData) {
-      router.push("/")
-    } else {
-      setUser(JSON.parse(userData))
-    }
-  }, [router])
+  async function getProfile() {
+    const profile = await getUserProfile();
+    console.log("User profile:", profile);
+    setUser(profile);
+    console.log("User state set to:", user.email);
+  }
 
+
+useEffect(() => {
+  const token = getToken();
+  if (!token) {
+    router.push("/");
+  }
+getProfile();
+}, []);
   if (!user) return null
 
   return (
@@ -31,11 +39,18 @@ export default function ClientesPage() {
             <h1 className="text-3xl font-bold text-white">Gerenciar Clientes</h1>
             <p className="text-slate-400 mt-2">Visualize e gerencie todos os clientes</p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
+        <Button onClick={() => setShowForm(!showForm)} className="bg-blue-600 hover:bg-blue-700 gap-2">
             <Plus className="w-4 h-4" />
             Novo Cliente
           </Button>
         </div>
+
+        {showForm && (
+                  <CustomerForm
+                    onClose={() => setShowForm(false)}
+                    onAdd={() => setShowForm(false)}
+                  />
+        )}
 
         <CustomerList />
       </div>

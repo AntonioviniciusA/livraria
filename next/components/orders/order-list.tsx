@@ -2,16 +2,27 @@
 
 import { Button } from "@/components/ui/button"
 import { Eye, CheckCircle, Clock, XCircle } from "lucide-react"
-
-const orders = [
-  { id: "#001", customer: "João Silva", date: "2025-01-15", total: "R$ 245.90", status: "Entregue", items: 3 },
-  { id: "#002", customer: "Maria Santos", date: "2025-01-14", total: "R$ 189.50", status: "Processando", items: 2 },
-  { id: "#003", customer: "Pedro Costa", date: "2025-01-13", total: "R$ 356.00", status: "Pendente", items: 5 },
-  { id: "#004", customer: "Ana Oliveira", date: "2025-01-12", total: "R$ 412.30", status: "Entregue", items: 4 },
-  { id: "#005", customer: "Carlos Mendes", date: "2025-01-11", total: "R$ 678.90", status: "Cancelado", items: 6 },
-]
+import { useState, useEffect } from "react"
+import { getPedidos } from "@/api/pedidos"
 
 export function OrderList() {
+
+const fetchOrders = async () => {
+
+  const response = await getPedidos();
+  return response;
+}
+
+const [orders, setOrders] = useState<any[]>([]);
+
+useEffect(() => {
+  fetchOrders().then((data) => {
+    setOrders(data);
+  });
+}, []);
+
+
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Entregue":

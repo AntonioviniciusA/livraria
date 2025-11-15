@@ -5,19 +5,28 @@ import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react"
+import { getUserProfile, getToken } from "@/api/auth"
 
 
 export default function CustomerDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
 
- useEffect(() => {
-    
+  async function getProfile() {
+    const profile = await getUserProfile();
+    console.log("User profile:", profile);
+    setUser(profile);
+    console.log("User state set to:", user.email);
+  }
 
-  
-  }, []);
 
-
+useEffect(() => {
+  const token = getToken();
+  if (!token) {
+    router.push("/");
+  }
+getProfile();
+}, []);
   if (!user) return null
 
   return (

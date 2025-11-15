@@ -23,3 +23,15 @@ export const maskISBN = (value: string): string => {
 export const unmaskCurrency = (value: string): number => {
   return Number.parseFloat(value.replace(/\./g, "").replace(/,/g, "."))
 }
+export const maskCPF = (value: string): string => {
+  value = value.replace(/\D/g, '')
+  value = value.replace(/(\d{3})(\d)/, '$1.$2')
+  value = value.replace(/(\d{3})(\d)/, '$1.$2')
+  value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+  return value.substring(0, 14)
+}
+export const maskCEP = (value: string): string => {
+  value = value.replace(/\D/g, '')
+  value = value.replace(/(\d{5})(\d)/, '$1-$2')
+  return value.substring(0, 9)
+}

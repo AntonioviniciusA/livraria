@@ -2,47 +2,21 @@
 
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2, Eye } from "lucide-react"
-
-const customers = [
-  {
-    id: 1,
-    name: "João Silva",
-    email: "joao@example.com",
-    phone: "(11) 98765-4321",
-    total: "R$ 2,450.00",
-    orders: 8,
-    status: "Ativo",
-  },
-  {
-    id: 2,
-    name: "Maria Santos",
-    email: "maria@example.com",
-    phone: "(21) 99876-5432",
-    total: "R$ 1,890.50",
-    orders: 5,
-    status: "Ativo",
-  },
-  {
-    id: 3,
-    name: "Pedro Costa",
-    email: "pedro@example.com",
-    phone: "(31) 98765-4321",
-    total: "R$ 3,560.00",
-    orders: 12,
-    status: "Inativo",
-  },
-  {
-    id: 4,
-    name: "Ana Oliveira",
-    email: "ana@example.com",
-    phone: "(41) 99876-5432",
-    total: "R$ 4,123.00",
-    orders: 15,
-    status: "Ativo",
-  },
-]
+import { useState, useEffect } from "react"
+import { getClientes } from "@/api/clientes"
 
 export function CustomerList() {
+  const [clientes, setClientes] = useState<any[]>([]);
+
+  async function fetchClientes() {
+    const response = await getClientes();
+    setClientes(response);
+  }
+
+  useEffect(() => {
+    fetchClientes();
+  }, []);
+    
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
       <div className="overflow-x-auto">
@@ -59,22 +33,13 @@ export function CustomerList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700">
-            {customers.map((customer) => (
-              <tr key={customer.id} className="hover:bg-slate-700/50 transition-colors">
-                <td className="py-4 px-6 text-white font-medium">{customer.name}</td>
-                <td className="py-4 px-6 text-slate-300">{customer.email}</td>
-                <td className="py-4 px-6 text-slate-300">{customer.phone}</td>
-                <td className="py-4 px-6 text-white font-semibold">{customer.total}</td>
-                <td className="py-4 px-6 text-slate-300">{customer.orders}</td>
-                <td className="py-4 px-6">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      customer.status === "Ativo" ? "bg-green-900/50 text-green-300" : "bg-gray-900/50 text-gray-300"
-                    }`}
-                  >
-                    {customer.status}
-                  </span>
-                </td>
+            {clientes.map((cliente) => (
+              <tr key={cliente.id} className="hover:bg-slate-700/50 transition-colors">
+                <td className="py-4 px-6 text-white font-medium">{cliente.nome}</td>
+                <td className="py-4 px-6 text-slate-300">{cliente.email}</td>
+                <td className="py-4 px-6 text-slate-300">{cliente.telefone}</td>
+                <td className="py-4 px-6 text-white font-semibold">{cliente.total}</td>
+                <td className="py-4 px-6 text-slate-300">{cliente.pedidos}</td>
                 <td className="py-4 px-6">
                   <div className="flex gap-2">
                     <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300">

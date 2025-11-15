@@ -2,54 +2,149 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { maskPhone, maskCurrency } from "@/lib/input-masks"
+import { createPedido } from "@/api/pedidos"
+import { getClientes } from "@/api/clientes"
+import { getLivros } from "@/api/livros"
 
 interface OrderFormModalProps {
   isOpen: boolean
   onClose: () => void
+  onAdd: (pedido: any) => void
 }
 
-export function OrderFormModal({ isOpen, onClose }: OrderFormModalProps) {
+interface Cliente {
+  id: number
+  nome: string
+  email: string
+  telefone: string
+  endereco: string
+  cidade: string
+  estado: string
+}
+
+interface Livro {
+  id: number
+  titulo: string
+  preco: number
+  estoque: number
+}
+
+export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) {
   const [formData, setFormData] = useState({
-    customer: "",
-    email: "",
-    phone: "",
-    book: "",
-    quantity: "1",
-    price: "",
-    address: "",
-    notes: "",
+    cliente_id: "",
+    livro_id: "",
+    quantidade: "1",
+    preco: "",
+    endereco_entrega: "",
+    observacoes: "",
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    let { name, value } = e.target
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [livros, setLivros] = useState<Livro[]>([])
+  const [loading, setLoading] = useState(false)
+  const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
+  const [livroSelecionado, setLivroSelecionado] = useState<Livro | null>(null)
 
-    if (name === "phone") {
-      value = maskPhone(value)
-    } else if (name === "price") {
-      value = maskCurrency(value)
+  // Carregar clientes e livros quando o modal abrir
+  useEffect(() => {
+    if (isOpen) {
+      const fetchData = async () => {
+        try {
+          setLoading(true)
+          const clientesData = await getClientes()
+          setClientes(clientesData)
+
+          // Buscar livros - você precisará criar esta API
+          const livrosResponse = await getLivros()
+          if (livrosResponse) {
+            const livrosData = await livrosResponse.json()
+            setLivros(livrosData)
+          }
+        } catch (error) {
+          console.error("Erro ao carregar dados:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      fetchData()
     }
+  }, [isOpen])
 
-    setFormData((prev) => ({ ...prev, [name]: value }))
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+
+    if (name === "cliente_id") {
+      const cliente = clientes.find(c => c.id.toString() === value)
+      setClienteSelecionado(cliente || null)
+      if (cliente && cliente.endereco) {
+        setFormData(prev => ({ 
+          ...prev, 
+          [name]: value,
+          endereco_entrega: cliente.endereco 
+        }))
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }))
+      }
+    } else if (name === "livro_id") {
+      const livro = livros.find(l => l.id.toString() === value)
+      setLivroSelecionado(livro || null)
+      if (livro) {
+        setFormData(prev => ({ 
+          ...prev, 
+          [name]: value,
+          preco: maskCurrency(livro.preco.toString())
+        }))
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }))
+      }
+    } else if (name === "preco") {
+      const valorFormatado = maskCurrency(value)
+      setFormData(prev => ({ ...prev, [name]: valorFormatado }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Novo pedido criado:", formData)
-    setFormData({
-      customer: "",
-      email: "",
-      phone: "",
-      book: "",
-      quantity: "1",
-      price: "",
-      address: "",
-      notes: "",
-    })
-    onClose()
+    try {
+      setLoading(true)
+      
+      const pedidoData = {
+        ...formData,
+        preco: Number.parseFloat(formData.preco.replace(/\./g, "").replace(/,/g, ".")),
+        quantidade: Number.parseInt(formData.quantidade),
+        cliente_id: Number.parseInt(formData.cliente_id),
+        livro_id: Number.parseInt(formData.livro_id)
+      }
+
+      const novoPedido = await createPedido(pedidoData)
+      onAdd(novoPedido)
+      
+      // Reset form
+      setFormData({
+        cliente_id: "",
+        livro_id: "",
+        quantidade: "1",
+        preco: "",
+        endereco_entrega: "",
+        observacoes: "",
+      })
+      setClienteSelecionado(null)
+      setLivroSelecionado(null)
+      
+      onClose()
+    } catch (error) {
+      console.error("Erro ao criar pedido:", error)
+      alert("Erro ao criar pedido")
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isOpen) return null
@@ -59,7 +154,11 @@ export function OrderFormModal({ isOpen, onClose }: OrderFormModalProps) {
       <div className="bg-slate-800 rounded-lg border border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-slate-700 sticky top-0 bg-slate-800">
           <h2 className="text-2xl font-bold text-white">Criar Novo Pedido</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+          <button 
+            onClick={onClose} 
+            className="text-slate-400 hover:text-white transition-colors"
+            disabled={loading}
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -67,53 +166,43 @@ export function OrderFormModal({ isOpen, onClose }: OrderFormModalProps) {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-white">Informações do Cliente</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Nome do Cliente *</label>
-                <input
-                  type="text"
-                  name="customer"
-                  value={formData.customer}
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Cliente *
+                </label>
+                <select
+                  name="cliente_id"
+                  value={formData.cliente_id}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-                  placeholder="João Silva"
-                />
+                >
+                  <option value="">Selecione um cliente</option>
+                  {clientes.map((cliente) => (
+                    <option key={cliente.id} value={cliente.id}>
+                      {cliente.nome} - {cliente.email}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-                  placeholder="joao@email.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Telefone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-                  placeholder="(11) 99999-9999"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Endereço *</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  required
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-                  placeholder="Rua das Flores, 123"
-                />
-              </div>
+
+              {clienteSelecionado && (
+                <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">Informações do Cliente Selecionado:</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-slate-400">Telefone:</span>
+                      <p className="text-white">{clienteSelecionado.telefone}</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Cidade/Estado:</span>
+                      <p className="text-white">{clienteSelecionado.cidade} - {clienteSelecionado.estado}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -123,65 +212,108 @@ export function OrderFormModal({ isOpen, onClose }: OrderFormModalProps) {
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-300 mb-2">Livro *</label>
                 <select
-                  name="book"
-                  value={formData.book}
+                  name="livro_id"
+                  value={formData.livro_id}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
                 >
                   <option value="">Selecione um livro</option>
-                  <option value="Clean Code">Clean Code - Robert C. Martin</option>
-                  <option value="The Pragmatic Programmer">The Pragmatic Programmer</option>
-                  <option value="Design Patterns">Design Patterns - Gang of Four</option>
-                  <option value="Refactoring">Refactoring - Martin Fowler</option>
+                  {livros.map((livro) => (
+                    <option key={livro.id} value={livro.id}>
+                      {livro.titulo} - R$ {livro.preco.toFixed(2)}
+                    </option>
+                  ))}
                 </select>
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Quantidade *</label>
                 <input
-                  type="text"
-                  inputMode="numeric"
-                  name="quantity"
-                  value={formData.quantity}
+                  type="number"
+                  name="quantidade"
+                  value={formData.quantidade}
                   onChange={handleChange}
+                  min="1"
                   required
+                  disabled={loading}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
                 />
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Preço Unitário *</label>
                 <input
                   type="text"
                   inputMode="decimal"
-                  name="price"
-                  value={formData.price}
+                  name="preco"
+                  value={formData.preco}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
                   placeholder="0,00"
                 />
               </div>
             </div>
+
+            {livroSelecionado && (
+              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                <h4 className="text-sm font-medium text-slate-300 mb-2">Informações do Livro Selecionado:</h4>
+                <div className="text-sm">
+                  <span className="text-slate-400">Estoque disponível: </span>
+                  <span className={`font-semibold ${livroSelecionado.estoque < 10 ? "text-red-400" : "text-green-400"}`}>
+                    {livroSelecionado.estoque} unidades
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-slate-300 mb-2">Endereço de Entrega *</label>
+            <textarea
+              name="endereco_entrega"
+              value={formData.endereco_entrega}
+              onChange={handleChange}
+              rows={3}
+              required
+              disabled={loading}
+              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
+              placeholder="Digite o endereço completo para entrega..."
+            />
           </div>
 
           <div className="space-y-4">
             <label className="block text-sm font-medium text-slate-300 mb-2">Observações</label>
             <textarea
-              name="notes"
-              value={formData.notes}
+              name="observacoes"
+              value={formData.observacoes}
               onChange={handleChange}
-              rows={3}
+              rows={2}
+              disabled={loading}
               className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
               placeholder="Adicione observações sobre o pedido..."
             />
           </div>
 
           <div className="flex gap-4 justify-end pt-4 border-t border-slate-700">
-            <Button type="button" onClick={onClose} className="bg-slate-700 hover:bg-slate-600 text-white">
+            <Button 
+              type="button" 
+              onClick={onClose} 
+              disabled={loading}
+              variant="outline"
+              className="border-slate-600 text-slate-300 bg-transparent hover:bg-slate-700"
+            >
               Cancelar
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-              Criar Pedido
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {loading ? "Criando..." : "Criar Pedido"}
             </Button>
           </div>
         </form>
