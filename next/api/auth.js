@@ -23,3 +23,8 @@ export const logout = async () => {
   const response = await api.post("/auth/logout");
   return response.data;
 };
+
+export const checkAuth = async () => {
+  const response = await api.get("/auth/check");
+  return response.data;
+};

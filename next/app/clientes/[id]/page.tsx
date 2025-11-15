@@ -5,18 +5,16 @@ import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react"
-import Cookies from "js-cookie"
+
 
 export default function CustomerDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
 
  useEffect(() => {
-    const token = Cookies.get("token");
+    
 
-    if (!token) {
-      router.push("/");
-    }
+  
   }, []);
 
 

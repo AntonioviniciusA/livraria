@@ -60,4 +60,32 @@ async function register(req, res) {
   }
 }
 
+async function logout(req, res) {
+  res.clearCookie("token");
+  res.status(200).json({ message: "Logout successful" });
+}
+async function checkAuth(req, res) {
+  const token = req.cookies.token;
+  if (!token) {
+    return res.status(401).json({ authenticated: false });
+  }
+  try {
+    jwt.verify(token, secret);
+    return res.status(200).json({ authenticated: true });
+  } catch (err) {
+    return res.status(401).json({ authenticated: false });
+  }
+}
+async function checkAuth(req, res) {
+  const token = req.cookies.token;
+  if (!token) {
+    return res.status(401).json({ authenticated: false });
+  }
+  try {
+    jwt.verify(token, secret);
+    return res.status(200).json({ authenticated: true });
+  } catch (err) {
+    return res.status(401).json({ authenticated: false });
+  }
+}
 module.exports = { login, register };

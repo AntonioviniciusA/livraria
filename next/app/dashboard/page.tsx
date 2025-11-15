@@ -7,23 +7,20 @@ import { StatsCard } from "@/components/dashboard/stats-card"
 import { RecentOrders } from "@/components/dashboard/recent-orders"
 import { ChartCard } from "@/components/dashboard/chart-card"
 import { TrendingUp, ShoppingCart, BookOpen, Users } from "lucide-react"
+import { checkAuth } from "@/api/auth"
 
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (!userData) {
-      router.push("/")
-    } else {
-      setUser(JSON.parse(userData))
-    }
-  }, [router])
-
-  if (!user) {
-    return null
+useEffect(() => {
+  async function verify() {
+    const result = await checkAuth();
+    if (!result.authenticated) router.push("/");
   }
+  verify();
+}, []);
+
 
   return (
     <DashboardLayout currentUser={user}>
