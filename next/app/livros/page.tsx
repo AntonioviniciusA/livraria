@@ -8,7 +8,7 @@ import { BookForm } from "@/components/books/book-form"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { getLivros } from "@/api/livros"
-import { getUserProfile } from "@/api/auth"
+import { getUserInfo } from "@/api/auth"
 
 export default function LivrosPage() {
   const router = useRouter()
@@ -23,7 +23,7 @@ export default function LivrosPage() {
       setBooks(responseLivros)
     }  
     async function getProfile() {
-        const profile = await getUserProfile();
+        const profile = await getUserInfo();
         setUser(profile);
       }
  

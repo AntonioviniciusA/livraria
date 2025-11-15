@@ -1,21 +1,27 @@
 import { api } from "./api";
-export const getEditoras = async () => {
-  const response = await api.get("/editoras");
+
+export const getPedidos = async () => {
+  const response = await api.get("/pedidos");
   return response.data;
 };
-export const getEditoraById = async (id) => {
-  const response = await api.get(`/editoras/${id}`);
+
+export const createPedido = async (pedidoData) => {
+  const response = await api.post("/pedidos", pedidoData);
   return response.data;
 };
-export const createEditora = async (editoraData) => {
-  const response = await api.post("/editoras", editoraData);
+export const updatePedido = async (pedidoId, pedidoData) => {
+  const response = await api.put(`/pedidos/${pedidoId}`, pedidoData);
   return response.data;
 };
-export const updateEditora = async (id, editoraData) => {
-  const response = await api.put(`/editoras/${id}`, editoraData);
+export const deletePedido = async (pedidoId) => {
+  const response = await api.delete(`/pedidos/${pedidoId}`);
   return response.data;
 };
-export const deleteEditora = async (id) => {
-  const response = await api.delete(`/editoras/${id}`);
+export const getPedidoById = async (pedidoId) => {
+  const response = await api.get(`/pedidos/${pedidoId}`);
+  return response.data;
+};
+export const getPedidosByUserId = async (userId) => {
+  const response = await api.get(`/pedidos/user/${userId}`);
   return response.data;
 };
