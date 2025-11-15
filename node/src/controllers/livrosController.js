@@ -61,6 +61,7 @@ async function create(req, res) {
     titulo,
     descricao,
     preco,
+    quantidade,
     publicado_em,
     editora_id,
     categoria_id,
@@ -80,8 +81,8 @@ async function create(req, res) {
 
     // Cria registro de estoque com quantidade 0 automaticamente
     await conn.query(
-      "INSERT INTO estoque (livro_id, quantidade) VALUES (?, 0)",
-      [livroId]
+      "INSERT INTO estoque (livro_id, quantidade) VALUES (?, ?)",
+      [livroId, quantidade]
     );
 
     await conn.commit();

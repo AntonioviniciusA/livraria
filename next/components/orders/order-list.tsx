@@ -18,6 +18,7 @@ const [orders, setOrders] = useState<any[]>([]);
 useEffect(() => {
   fetchOrders().then((data) => {
     setOrders(data);
+    console.log("Orders fetched:", data);
   });
 }, []);
 
@@ -57,8 +58,8 @@ useEffect(() => {
             {orders.map((order) => (
               <tr key={order.id} className="hover:bg-slate-700/50 transition-colors">
                 <td className="py-4 px-6 text-white font-medium">{order.id}</td>
-                <td className="py-4 px-6 text-slate-300">{order.customer}</td>
-                <td className="py-4 px-6 text-slate-300">{order.date}</td>
+                <td className="py-4 px-6 text-slate-300">{order.cliente}</td>
+                <td className="py-4 px-6 text-slate-300">{order.data}</td>
                 <td className="py-4 px-6 text-slate-300">{order.items}</td>
                 <td className="py-4 px-6 text-white font-semibold">{order.total}</td>
                 <td className="py-4 px-6">

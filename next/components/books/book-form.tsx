@@ -36,6 +36,7 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
     descricao: "",
     isbn: "",
     preco: "",
+    quantidade: "",
     publicado_em: "",
     editora_id: "",
     categoria_id: ""
@@ -230,6 +231,16 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
             onChange={handleChange}
             name="preco"
             inputMode="decimal"
+            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+            required
+            disabled={loading}
+          />
+           <Input
+            placeholder="Quantidade de estoque"
+            value={formData.quantidade}
+            onChange={handleChange}
+            name="quantidade"
+            inputMode="numeric"    
             className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
             required
             disabled={loading}
