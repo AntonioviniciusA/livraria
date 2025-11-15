@@ -28,3 +28,7 @@ export const checkAuth = async () => {
   const response = await api.get("/auth/check");
   return response.data;
 };
+export const getUserProfile = async () => {
+  const response = await api.get("/auth/profile");
+  return response.data;
+};

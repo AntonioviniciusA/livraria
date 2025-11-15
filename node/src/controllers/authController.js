@@ -88,4 +88,27 @@ async function checkAuth(req, res) {
     return res.status(401).json({ authenticated: false });
   }
 }
-module.exports = { login, register };
+async function getUserProfile(req, res) {
+  const token = req.cookies.token;
+  if (!token) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  try {
+    const decoded = jwt.verify(token, secret);
+    const [rows] = await db
+      .getPool()
+      .query(
+        "SELECT id, username, nome_completo, email, grupo_id FROM usuarios WHERE id = ?",
+        [decoded.uid]
+      );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const user = rows[0];
+    res.status(200).json({ user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal" });
+  }
+}
+module.exports = { login, register, logout, checkAuth, getUserProfile };
