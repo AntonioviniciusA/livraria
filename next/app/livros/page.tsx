@@ -7,6 +7,7 @@ import { BookList } from "@/components/books/book-list"
 import { BookForm } from "@/components/books/book-form"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
+import { getLivros } from "@/api/livros"
 
 export default function LivrosPage() {
   const router = useRouter()
@@ -14,43 +15,18 @@ export default function LivrosPage() {
   const [showForm, setShowForm] = useState(false)
   const [books, setBooks] = useState<any[]>([])
 
+
+   async function fetchBooks() {
+      const responseLivros = await getLivros();
+      console.log("Livros fetched:", responseLivros);
+      setBooks(responseLivros)
+    }
+ 
   useEffect(() => {
     const userData = localStorage.getItem("user")
-    if (!userData) {
-      router.push("/")
-    } else {
-      setUser(JSON.parse(userData))
-      // Load mock books data
-      setBooks([
-        {
-          id: 1,
-          title: "Clean Code",
-          author: "Robert C. Martin",
-          isbn: "978-0132350884",
-          price: 89.9,
-          quantity: 15,
-          category: "Programação",
-        },
-        {
-          id: 2,
-          title: "Design Patterns",
-          author: "Gang of Four",
-          isbn: "978-0201633610",
-          price: 124.9,
-          quantity: 8,
-          category: "Programação",
-        },
-        {
-          id: 3,
-          title: "The Pragmatic Programmer",
-          author: "Hunt & Thomas",
-          isbn: "978-1680502090",
-          price: 95.5,
-          quantity: 12,
-          category: "Desenvolvimento",
-        },
-      ])
-    }
+      setUser(userData);
+ 
+    fetchBooks();
   }, [router])
 
   if (!user) return null

@@ -12,14 +12,18 @@ import { checkAuth } from "@/api/auth"
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
-
-useEffect(() => {
   async function verify() {
     const result = await checkAuth();
     if (!result.authenticated) router.push("/");
   }
+
+
+useEffect(() => {
+    const userData = localStorage.getItem("user")
+      setUser(userData);
   verify();
 }, []);
+  if (!user) return null
 
 
   return (
