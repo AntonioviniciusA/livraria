@@ -40,11 +40,19 @@ async function create(req, res) {
         "SELECT quantidade FROM estoque WHERE livro_id = ? FOR UPDATE",
         [it.livro_id]
       );
+       // Se não existe estoque, cria com quantidade 0
+  if (stockRows.length === 0) {
+    await conn.query(
+      "INSERT INTO estoque (livro_id, quantidade) VALUES (?, 0)",
+      [it.livro_id]
+    );
+    throw new Error(`Estoque criado para livro ${it.livro_id}, mas quantidade é 0. Não é possível processar o pedido.`);
+  }
       if (stockRows.length === 0)
         throw new Error(`Estoque não encontrado para livro ${it.livro_id}`);
       const available = stockRows[0].quantidade;
-      if (available < it.quantidade)
-        throw new Error(`Estoque insuficiente para livro ${it.livro_id}`);
+  if (available < it.quantidade)
+    throw new Error(`Estoque insuficiente para livro ${it.livro_id}. Disponível: ${available}, Solicitado: ${it.quantidade}`);
 
       await conn.query(
         "INSERT INTO pedidos_itens (pedido_id, livro_id, quantidade, preco_unitario) VALUES (?,?,?,?)",
