@@ -12,6 +12,8 @@ const autoresRoutes = require("./routes/autores");
 const editorasRoutes = require("./routes/editoras");
 const clientesRoutes = require("./routes/clientes");
 const pedidosRoutes = require("./routes/pedidos");
+const categoriasRoutes = require("./routes/categorias");
+
 
 const app = express();
 app.use(helmet());
@@ -39,6 +41,7 @@ app.use("/autores", autoresRoutes);
 app.use("/editoras", editorasRoutes);
 app.use("/clientes", clientesRoutes);
 app.use("/pedidos", pedidosRoutes);
+app.use("/categorias", categoriasRoutes);
 
 const PORT = process.env.PORT;
 
