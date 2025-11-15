@@ -10,6 +10,7 @@ import { X, Plus } from "lucide-react"
 import { maskISBN, maskCurrency } from "@/lib/input-masks"
 import { createLivro } from "@/api/livros"
 import {createEditora, getEditoras} from "@/api/editoras"
+import {createCategoria, getCategorias} from "@/api/categorias"
 
 interface BookFormProps {
   onClose: () => void
@@ -62,15 +63,16 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
         setLoading(true)
         const [editorasRes, categoriasRes] = await Promise.all([
           getEditoras(),
-          fetch("/api/categorias")
+          getCategorias()
         ])
-        
-        if (editorasRes.ok) {
-          const editorasData = await editorasRes.json()
+  
+        if (editorasRes) {
+          const editorasData = await getEditoras();
+          console.log("Editoras data:", editorasData);
           setEditoras(editorasData)
         }
         
-        if (categoriasRes.ok) {
+        if (categoriasRes) {
           const categoriasData = await categoriasRes.json()
           setCategorias(categoriasData)
         }
@@ -138,7 +140,7 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
       setLoading(true)
       const response = await createEditora(novaEditora);
      
-      if (response.ok) {
+      if (response) {
         const editoraCriada = await response.json()
         setEditoras([...editoras, editoraCriada])
         setFormData({ ...formData, editora_id: editoraCriada.id.toString() })
@@ -163,15 +165,9 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
 
     try {
       setLoading(true)
-      const response = await fetch("/api/categorias", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(novaCategoria),
-      })
+      const response = await createCategoria(novaCategoria);
 
-      if (response.ok) {
+      if (response) {
         const categoriaCriada = await response.json()
         setCategorias([...categorias, categoriaCriada])
         setFormData({ ...formData, categoria_id: categoriaCriada.id.toString() })

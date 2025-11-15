@@ -11,53 +11,44 @@ import { OrderFormModal } from "@/components/orders/order-form-modal"
 import { PurchaseFormModal } from "@/components/orders/purchase-form-modal"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-
+import { getUserProfile, getToken } from "@/api/auth"
+import { createPedido, getPedidos } from "@/api/pedidos"
 export default function PedidosPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<"pedidos" | "compras">("pedidos")
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false)
   const [isPurchaseFormOpen, setIsPurchaseFormOpen] = useState(false)
-  const [purchases, setPurchases] = useState([
-    {
-      id: 1,
-      bookTitle: "Clean Code",
-      supplier: "Fornecedor A",
-      quantity: 10,
-      unitPrice: 85.0,
-      totalPrice: 850.0,
-      date: "2025-01-15",
-      status: "Entregue" as const,
-    },
-    {
-      id: 2,
-      bookTitle: "Design Patterns",
-      supplier: "Fornecedor B",
-      quantity: 5,
-      unitPrice: 120.0,
-      totalPrice: 600.0,
-      date: "2025-01-20",
-      status: "Processando" as const,
-    },
-  ])
+  const [purchases, setPurchases] = useState([])
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (!userData) {
-      router.push("/")
-    } else {
-      setUser(JSON.parse(userData))
-    }
-  }, [router])
+  async function getProfile() {
+    const profile = await getUserProfile();
+    console.log("User profile:", profile);
+    setUser(profile);
+    console.log("User state set to:", user.email);
+  }
+  async function fetchPedidos() {
+    const pedidos = await getPedidos();
+    console.log("Pedidos fetched:", pedidos);
+     setPurchases(pedidos)
+  }
 
-  const handleAddPurchase = (purchaseData: any) => {
-    const newPurchase = {
-      id: purchases.length + 1,
-      ...purchaseData,
-      totalPrice: purchaseData.quantity * purchaseData.unitPrice,
-      status: "Processando" as const,
+
+useEffect(() => {
+  const token = getToken();
+  if (!token) {
+    router.push("/");
+  }
+
+getProfile();
+}, []);
+
+  const handleAddPurchase = async (purchaseData: any) => {
+   const response = await createPedido(purchaseData);
+    if (response) {
+      fetchPedidos();
     }
-    setPurchases([...purchases, newPurchase])
+    
   }
 
   if (!user) return null

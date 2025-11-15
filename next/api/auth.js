@@ -26,6 +26,7 @@ export const logout = async () => {
 
 export const getUserProfile = async () => {
   const response = await api.get("/auth/profile");
+  setUserInfo(response.data);
   return response.data;
 };
 export const getToken = () => {
@@ -38,4 +39,11 @@ export const setToken = (token) => {
 
 export const clearToken = () => {
   localStorage.removeItem("token");
+};
+export const getUserInfo = () => {
+  const userInfo = localStorage.getItem("user");
+  return userInfo ? JSON.parse(userInfo) : null;
+};
+export const setUserInfo = (userInfo) => {
+  localStorage.setItem("user", JSON.stringify(userInfo));
 };
