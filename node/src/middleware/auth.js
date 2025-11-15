@@ -1,14 +1,16 @@
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
-const secret = process.env.JWT_SECRET || "secret_dev";
+const secret = process.env.JWT_SECRET;
 
 async function authenticate(req, res, next) {
-  const auth = req.cookies.token;
-  if (!auth) return res.status(401).json({ error: "Unauthorized" });
-  const token = auth.slice(7);
+  const token = req.headers.authorization?.split(" ")[1];
+  console.log("auth middleware:", token);
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const payload = jwt.verify(token, secret);
+    console.log("payload:", payload);
+    console.log("payload.uid:", payload.uid);
     const [rows] = await db
       .getPool()
       .query(
@@ -29,6 +31,8 @@ function authorize(requiredGroups = []) {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     if (requiredGroups.length === 0) return next();
     if (requiredGroups.includes(req.user.grupo)) return next();
+    console.log("User group:", req.user.grupo);
+    console.log("Forbidden access to this resource");
     return res.status(403).json({ error: "Forbidden" });
   };
 }

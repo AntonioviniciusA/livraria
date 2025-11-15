@@ -26,7 +26,7 @@ export function LoginForm({ onLoadingChange, isLoading }: LoginFormProps) {
 
     try {
       const response = await login(username, password);
-      console.info(response);
+      localStorage.setItem("token", response.token);
       console.log("username", username);
       console.log("password", password);
       onLoadingChange(false);

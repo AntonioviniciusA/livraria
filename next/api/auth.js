@@ -24,11 +24,18 @@ export const logout = async () => {
   return response.data;
 };
 
-export const checkAuth = async () => {
-  const response = await api.get("/auth/check");
-  return response.data;
-};
 export const getUserProfile = async () => {
   const response = await api.get("/auth/profile");
   return response.data;
+};
+export const getToken = () => {
+  return localStorage.getItem("token");
+};
+
+export const setToken = (token) => {
+  localStorage.setItem("token", token);
+};
+
+export const clearToken = () => {
+  localStorage.removeItem("token");
 };
