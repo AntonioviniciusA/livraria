@@ -8,6 +8,7 @@ import { BookForm } from "@/components/books/book-form"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { getLivros } from "@/api/livros"
+import { getUserProfile } from "@/api/auth"
 
 export default function LivrosPage() {
   const router = useRouter()
@@ -20,12 +21,14 @@ export default function LivrosPage() {
       const responseLivros = await getLivros();
       console.log("Livros fetched:", responseLivros);
       setBooks(responseLivros)
-    }
+    }  
+    async function getProfile() {
+        const profile = await getUserProfile();
+        setUser(profile);
+      }
  
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-      setUser(userData);
- 
+    getProfile();
     fetchBooks();
   }, [router])
 

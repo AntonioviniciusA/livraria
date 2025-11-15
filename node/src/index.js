@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const db = require("./config/db");
+const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/auth");
 const usuariosRoutes = require("./routes/usuarios");
@@ -14,20 +15,23 @@ const clientesRoutes = require("./routes/clientes");
 const pedidosRoutes = require("./routes/pedidos");
 
 const app = express();
-app.use(helmet());
+
 app.use(
   cors({
     origin: process.env.SITE_URL,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["Set-Cookie"],
-    preflightContinue: false,
-    optionsSuccessStatus: 200,
     maxAge: 600,
   })
 );
 app.use(express.json());
+app.use(cookieParser());
+app.use(
+  helmet({
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: false,
+  })
+);
 
 app.get("/", (req, res) => res.json({ ok: true, service: "livraria-backend" }));
 

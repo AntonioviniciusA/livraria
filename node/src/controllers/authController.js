@@ -25,14 +25,10 @@ async function login(req, res) {
     const token = jwt.sign({ uid: user.id, username: user.username }, secret, {
       expiresIn,
     });
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: (Number(expiresIn) || 3600) * 1000, // 1 hora padrão
-      sameSite: "strict",
+    res.status(200).json({
+      message: "Login successful",
+      token: token,
     });
-    res.status(200).json({ message: "Login successful" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "internal" });
@@ -60,36 +56,9 @@ async function register(req, res) {
   }
 }
 
-async function logout(req, res) {
-  res.clearCookie("token");
-  res.status(200).json({ message: "Logout successful" });
-}
-async function checkAuth(req, res) {
-  const token = req.cookies.token;
-  if (!token) {
-    return res.status(401).json({ authenticated: false });
-  }
-  try {
-    jwt.verify(token, secret);
-    return res.status(200).json({ authenticated: true });
-  } catch (err) {
-    return res.status(401).json({ authenticated: false });
-  }
-}
-async function checkAuth(req, res) {
-  const token = req.cookies.token;
-  if (!token) {
-    return res.status(401).json({ authenticated: false });
-  }
-  try {
-    jwt.verify(token, secret);
-    return res.status(200).json({ authenticated: true });
-  } catch (err) {
-    return res.status(401).json({ authenticated: false });
-  }
-}
 async function getUserProfile(req, res) {
-  const token = req.cookies.token;
+  const token = req.headers.authorization?.split(" ")[1];
+  console.log("Token from cookies:", token);
   if (!token) {
     return res.status(401).json({ error: "Not authenticated" });
   }
@@ -111,4 +80,4 @@ async function getUserProfile(req, res) {
     res.status(500).json({ error: "internal" });
   }
 }
-module.exports = { login, register, logout, checkAuth, getUserProfile };
+module.exports = { login, register, getUserProfile };

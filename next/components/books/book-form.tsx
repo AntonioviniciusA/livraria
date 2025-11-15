@@ -41,7 +41,7 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
   const [showEditoraModal, setShowEditoraModal] = useState(false)
   const [showCategoriaModal, setShowCategoriaModal] = useState(false)
   const [novaEditora, setNovaEditora] = useState("")
-  const [novaCategoria, setNovaCategoria] = useState("")
+  const [novaCategoria, setNovaCategoria] = useState([ ])
 
   // Carregar editoras e categorias
   useEffect(() => {
