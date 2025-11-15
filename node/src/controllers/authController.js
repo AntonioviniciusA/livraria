@@ -7,8 +7,7 @@ const expiresIn = process.env.JWT_EXPIRES_IN || "8h";
 
 async function login(req, res) {
   const { username, password } = req.body;
-  console.log("username", username);
-  console.log("password", password);
+
   if (!username || !password)
     return res.status(400).json({ error: "username & password required" });
   try {
@@ -58,7 +57,6 @@ async function register(req, res) {
 
 async function getUserProfile(req, res) {
   const token = req.headers.authorization?.split(" ")[1];
-  console.log("Token from cookies:", token);
   if (!token) {
     return res.status(401).json({ error: "Not authenticated" });
   }

@@ -31,6 +31,8 @@ function authorize(requiredGroups = []) {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     if (requiredGroups.length === 0) return next();
     if (requiredGroups.includes(req.user.grupo)) return next();
+    console.log("User group:", req.user.grupo);
+    console.log("Forbidden access to this resource");
     return res.status(403).json({ error: "Forbidden" });
   };
 }
