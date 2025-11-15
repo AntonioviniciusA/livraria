@@ -96,7 +96,7 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
           newItens[index] = {
             ...newItens[index],
             [field]: value,
-            preco_unitario: maskCurrency(livro.preco.toString())
+            preco_unitario: maskCurrency(livro.preco.toFixed(2).replace(".", ","))
           }
         } else {
           newItens[index] = {
@@ -149,9 +149,9 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
   const calcularTotal = () => {
     return formData.itens.reduce((total, item) => {
       if (item.preco_unitario && item.quantidade) {
-        const preco = Number.parseFloat(item.preco_unitario.replace(/\./g, ","))
+        const preco = Number.parseFloat(item.preco_unitario.replace(/\./g, ",").replace(/,/g, "."))
         const quantidade = Number.parseInt(item.quantidade)
-        return total + (preco * quantidade)
+        return( total + (preco * quantidade) )
       }
       return total
     }, 0)
