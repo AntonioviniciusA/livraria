@@ -7,7 +7,7 @@ import { BookList } from "@/components/books/book-list"
 import { BookForm } from "@/components/books/book-form"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { getLivros } from "@/api/livros"
+import { deleteLivro, getLivros } from "@/api/livros"
 import { getUserInfo } from "@/api/auth"
 
 export default function LivrosPage() {
@@ -26,13 +26,19 @@ export default function LivrosPage() {
         const profile = await getUserInfo();
         setUser(profile);
       }
+      async function handledeleteLivro(id: number) {
+       const resDelete = await deleteLivro(id);
+       console.log("Livro deleted:", resDelete);
+        fetchBooks();
+      }
  
   useEffect(() => {
     getProfile();
     fetchBooks();
   }, [router])
 
-  if (!user) return null
+ if (user === null) return <div className="text-white">Carregando...</div>
+
 
   return (
     <DashboardLayout currentUser={user}>
@@ -40,7 +46,7 @@ export default function LivrosPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white">Gerenciar Livros</h1>
-            <p className="text-slate-400 mt-2">Total de {books.length} livros em estoque</p>
+            <p className="text-slate-400 mt-2">Total de {books?.length} livros em estoque</p>
           </div>
           <Button onClick={() => setShowForm(!showForm)} className="bg-blue-600 hover:bg-blue-700 gap-2">
             <Plus className="w-4 h-4" />
@@ -54,6 +60,7 @@ export default function LivrosPage() {
             onAdd={(book) => {
               setBooks([...books, book])
               setShowForm(false)
+              fetchBooks()
             }}
           />
         )}
@@ -61,9 +68,11 @@ export default function LivrosPage() {
         <BookList
           books={books}
           onUpdate={() => {}}
-          onDelete={(id) => {
-            setBooks(books.filter((b) => b.id !== id))
-          }}
+          onDelete={ (id) => {
+            handledeleteLivro(id);
+  setBooks(prev => prev.filter(b => b.id !== id));
+}}
+
         />
       </div>
     </DashboardLayout>

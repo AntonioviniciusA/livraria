@@ -113,7 +113,9 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
       }
 
       const novoLivro = await createLivro(livroData)
+      
       onAdd(novoLivro)
+      
       onClose()
     } catch (error) {
       console.error("Erro ao criar livro:", error)

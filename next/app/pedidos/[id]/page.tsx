@@ -19,7 +19,8 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
     }
   }, [router])
 
-  if (!user) return null
+ if (user === null) return <div className="text-white">Carregando...</div>
+
 
   return (
     <DashboardLayout currentUser={user}>

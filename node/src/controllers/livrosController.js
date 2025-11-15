@@ -78,5 +78,55 @@ async function create(req, res) {
     res.status(500).json({ error: "internal" });
   }
 }
+async function update(req, res) {
+  try {
+    const {
+      isbn,
+      titulo,
+      descricao,
+      preco,
+      publicado_em,
+      editora_id,
+      categoria_id,
+    } = req.body;
+    const [result] = await db
+      .getPool()
+      .query(
+        "UPDATE livros SET isbn = ?, titulo = ?, descricao = ?, preco = ?, publicado_em = ?, editora_id = ?, categoria_id = ? WHERE id = ?",
+        [
+          isbn,
+          titulo,
+          descricao,
+          preco,
+          publicado_em,
+          editora_id,
+          categoria_id,
+          req.params.id,
+        ]
+      );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Not found" });
+    }
+    res.status(200).json({ message: "Updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal" });
+  }
+}
 
-module.exports = { list, getById, create };
+async function apagar(req, res) {
+  try {
+    const [result] = await db
+      .getPool()
+      .query("DELETE FROM livros WHERE id = ?", [req.params.id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Not found" });
+    }
+    res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal" });
+  }
+}
+
+module.exports = { list, getById, create, delete: apagar };

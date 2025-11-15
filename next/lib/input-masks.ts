@@ -7,9 +7,21 @@ export const maskPhone = (value: string): string => {
 }
 
 export const maskCurrency = (value: string): string => {
-  const numericValue = value.replace(/\D/g, "")
-  const formatted = (Number.parseInt(numericValue, 10) / 100).toFixed(2)
-  return formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+  // Remove caracteres não numéricos, exceto vírgula
+  let cleanValue = value.replace(/[^\d,]/g, "")
+  
+  // Garante que há apenas uma vírgula para decimais
+  const parts = cleanValue.split(",")
+  if (parts.length > 2) {
+    cleanValue = parts[0] + "," + parts.slice(1).join("")
+  }
+  
+  // Limita a 2 casas decimais após a vírgula
+  if (parts.length === 2) {
+    cleanValue = parts[0] + "," + parts[1].slice(0, 2)
+  }
+  
+  return cleanValue
 }
 
 export const maskQuantity = (value: string): string => {

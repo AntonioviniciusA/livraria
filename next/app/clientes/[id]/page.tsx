@@ -27,7 +27,8 @@ useEffect(() => {
   }
 getProfile();
 }, []);
-  if (!user) return null
+ if (user === null) return <div className="text-white">Carregando...</div>
+
 
   return (
     <DashboardLayout currentUser={user}>

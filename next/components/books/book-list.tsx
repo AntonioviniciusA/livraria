@@ -32,12 +32,13 @@ export function BookList({ books, onUpdate, onDelete }: BookListProps) {
     return date.toLocaleDateString('pt-BR')
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value)
-  }
+  
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value)
+}
 
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
