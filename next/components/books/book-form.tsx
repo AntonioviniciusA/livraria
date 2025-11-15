@@ -61,21 +61,14 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [editorasRes, categoriasRes] = await Promise.all([
-          getEditoras(),
-          getCategorias()
-        ])
-  
-        if (editorasRes) {
           const editorasData = await getEditoras();
           console.log("Editoras data:", editorasData);
           setEditoras(editorasData)
-        }
-        
-        if (categoriasRes) {
-          const categoriasData = await categoriasRes.json()
+    
+          const categoriasData = await getCategorias();
+          console.log("Categorias data:", categoriasData);
           setCategorias(categoriasData)
-        }
+        
       } catch (error) {
         console.error("Erro ao carregar dados:", error)
       } finally {
@@ -140,15 +133,14 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
       setLoading(true)
       const response = await createEditora(novaEditora);
      
-      if (response) {
+  
         const editoraCriada = await response.json()
         setEditoras([...editoras, editoraCriada])
         setFormData({ ...formData, editora_id: editoraCriada.id.toString() })
         setNovaEditora({ nome: "", pais: "", contato: "" })
         setShowEditoraModal(false)
-      } else {
-        throw new Error("Erro ao criar editora")
-      }
+      
+      alert("Editora criada com sucesso!")
     } catch (error) {
       console.error("Erro ao criar editora:", error)
       alert("Erro ao criar editora")
@@ -167,15 +159,13 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
       setLoading(true)
       const response = await createCategoria(novaCategoria);
 
-      if (response) {
         const categoriaCriada = await response.json()
         setCategorias([...categorias, categoriaCriada])
         setFormData({ ...formData, categoria_id: categoriaCriada.id.toString() })
         setNovaCategoria({ nome: "", descricao: "" })
         setShowCategoriaModal(false)
-      } else {
-        throw new Error("Erro ao criar categoria")
-      }
+    
+      alert("Categoria criada com sucesso!")
     } catch (error) {
       console.error("Erro ao criar categoria:", error)
       alert("Erro ao criar categoria")
