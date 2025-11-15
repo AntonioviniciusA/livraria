@@ -35,8 +35,8 @@ useEffect(() => {
   if (!token) {
     router.push("/");
   }
-
-getProfile();
+  fetchPedidos();
+  getProfile();
 }, []);
 
   const handleAddPurchase = async (purchaseData: any) => {
@@ -70,7 +70,7 @@ getProfile();
             <OrderStats />
             <OrderList />
           </>
-        <OrderFormModal isOpen={isOrderFormOpen} onClose={() => setIsOrderFormOpen(false)} />
+        <OrderFormModal onAdd={setIsOrderFormOpen} isOpen={isOrderFormOpen} onClose={() => setIsOrderFormOpen(false)} />
       </div>
     </DashboardLayout>
   )

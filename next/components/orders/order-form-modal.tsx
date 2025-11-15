@@ -4,8 +4,8 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
-import { maskPhone, maskCurrency } from "@/lib/input-masks"
+import { X, Plus, Trash2 } from "lucide-react"
+import { maskCurrency } from "@/lib/input-masks"
 import { createPedido } from "@/api/pedidos"
 import { getClientes } from "@/api/clientes"
 import { getLivros } from "@/api/livros"
@@ -33,12 +33,16 @@ interface Livro {
   estoque: number
 }
 
+interface ItemPedido {
+  livro_id: string
+  quantidade: string
+  preco_unitario: string
+}
+
 export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) {
   const [formData, setFormData] = useState({
     cliente_id: "",
-    livro_id: "",
-    quantidade: "1",
-    preco: "",
+    itens: [{ livro_id: "", quantidade: "1", preco_unitario: "" }] as ItemPedido[],
     endereco_entrega: "",
     observacoes: "",
   })
@@ -47,7 +51,6 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
   const [livros, setLivros] = useState<Livro[]>([])
   const [loading, setLoading] = useState(false)
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
-  const [livroSelecionado, setLivroSelecionado] = useState<Livro | null>(null)
 
   // Carregar clientes e livros quando o modal abrir
   useEffect(() => {
@@ -58,12 +61,8 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
           const clientesData = await getClientes()
           setClientes(clientesData)
 
-          // Buscar livros - você precisará criar esta API
           const livrosResponse = await getLivros()
-          if (livrosResponse) {
-            const livrosData = await livrosResponse.json()
-            setLivros(livrosData)
-          }
+          setLivros(livrosResponse)
         } catch (error) {
           console.error("Erro ao carregar dados:", error)
         } finally {
@@ -75,39 +74,87 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
     }
   }, [isOpen])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
+  const handleClienteChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target
+    const cliente = clientes.find(c => c.id.toString() === value)
+    setClienteSelecionado(cliente || null)
+    
+    setFormData(prev => ({ 
+      ...prev, 
+      cliente_id: value,
+      endereco_entrega: cliente?.endereco || "" 
+    }))
+  }
 
-    if (name === "cliente_id") {
-      const cliente = clientes.find(c => c.id.toString() === value)
-      setClienteSelecionado(cliente || null)
-      if (cliente && cliente.endereco) {
-        setFormData(prev => ({ 
-          ...prev, 
-          [name]: value,
-          endereco_entrega: cliente.endereco 
-        }))
+  const handleItemChange = (index: number, field: keyof ItemPedido, value: string) => {
+    setFormData(prev => {
+      const newItens = [...prev.itens]
+      
+      if (field === "livro_id") {
+        const livro = livros.find(l => l.id.toString() === value)
+        if (livro) {
+          newItens[index] = {
+            ...newItens[index],
+            [field]: value,
+            preco_unitario: maskCurrency(livro.preco.toString())
+          }
+        } else {
+          newItens[index] = {
+            ...newItens[index],
+            [field]: value,
+            preco_unitario: ""
+          }
+        }
+      } else if (field === "preco_unitario") {
+        const valorFormatado = maskCurrency(value)
+        newItens[index] = {
+          ...newItens[index],
+          [field]: valorFormatado
+        }
       } else {
-        setFormData(prev => ({ ...prev, [name]: value }))
+        newItens[index] = {
+          ...newItens[index],
+          [field]: value
+        }
       }
-    } else if (name === "livro_id") {
-      const livro = livros.find(l => l.id.toString() === value)
-      setLivroSelecionado(livro || null)
-      if (livro) {
-        setFormData(prev => ({ 
-          ...prev, 
-          [name]: value,
-          preco: maskCurrency(livro.preco.toString())
-        }))
-      } else {
-        setFormData(prev => ({ ...prev, [name]: value }))
-      }
-    } else if (name === "preco") {
-      const valorFormatado = maskCurrency(value)
-      setFormData(prev => ({ ...prev, [name]: valorFormatado }))
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }))
+
+      return { ...prev, itens: newItens }
+    })
+  }
+
+  const addItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      itens: [...prev.itens, { livro_id: "", quantidade: "1", preco_unitario: "" }]
+    }))
+  }
+
+  const removeItem = (index: number) => {
+    if (formData.itens.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        itens: prev.itens.filter((_, i) => i !== index)
+      }))
     }
+  }
+
+  const handleEnderecoChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, endereco_entrega: e.target.value }))
+  }
+
+  const handleObservacoesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, observacoes: e.target.value }))
+  }
+
+  const calcularTotal = () => {
+    return formData.itens.reduce((total, item) => {
+      if (item.preco_unitario && item.quantidade) {
+        const preco = Number.parseFloat(item.preco_unitario.replace(/\./g, ","))
+        const quantidade = Number.parseInt(item.quantidade)
+        return total + (preco * quantidade)
+      }
+      return total
+    }, 0)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,28 +162,29 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
     try {
       setLoading(true)
       
+      // Preparar dados no formato esperado pelo backend
       const pedidoData = {
-        ...formData,
-        preco: Number.parseFloat(formData.preco.replace(/\./g, "").replace(/,/g, ".")),
-        quantidade: Number.parseInt(formData.quantidade),
         cliente_id: Number.parseInt(formData.cliente_id),
-        livro_id: Number.parseInt(formData.livro_id)
+        itens: formData.itens.map(item => ({
+          livro_id: Number.parseInt(item.livro_id),
+          quantidade: Number.parseInt(item.quantidade),
+          // O preço unitário será buscado no backend, mas enviamos por segurança
+          preco_unitario: Number.parseFloat(item.preco_unitario.replace(/\./g, "").replace(/,/g, "."))
+        }))
       }
 
+      console.log("Enviando pedido:", pedidoData)
       const novoPedido = await createPedido(pedidoData)
       onAdd(novoPedido)
       
       // Reset form
       setFormData({
         cliente_id: "",
-        livro_id: "",
-        quantidade: "1",
-        preco: "",
+        itens: [{ livro_id: "", quantidade: "1", preco_unitario: "" }],
         endereco_entrega: "",
         observacoes: "",
       })
       setClienteSelecionado(null)
-      setLivroSelecionado(null)
       
       onClose()
     } catch (error) {
@@ -151,7 +199,7 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg border border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-slate-800 rounded-lg border border-slate-700 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-slate-700 sticky top-0 bg-slate-800">
           <h2 className="text-2xl font-bold text-white">Criar Novo Pedido</h2>
           <button 
@@ -172,9 +220,8 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
                   Cliente *
                 </label>
                 <select
-                  name="cliente_id"
                   value={formData.cliente_id}
-                  onChange={handleChange}
+                  onChange={handleClienteChange}
                   required
                   disabled={loading}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
@@ -207,95 +254,111 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white">Informações do Livro</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-300 mb-2">Livro *</label>
-                <select
-                  name="livro_id"
-                  value={formData.livro_id}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-                >
-                  <option value="">Selecione um livro</option>
-                  {livros.map((livro) => (
-                    <option key={livro.id} value={livro.id}>
-                      {livro.titulo} - R$ {livro.preco.toFixed(2)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Quantidade *</label>
-                <input
-                  type="number"
-                  name="quantidade"
-                  value={formData.quantidade}
-                  onChange={handleChange}
-                  min="1"
-                  required
-                  disabled={loading}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Preço Unitário *</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  name="preco"
-                  value={formData.preco}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-                  placeholder="0,00"
-                />
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Itens do Pedido</h3>
+              <Button
+                type="button"
+                onClick={addItem}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={loading}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Adicionar Item
+              </Button>
             </div>
 
-            {livroSelecionado && (
-              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-                <h4 className="text-sm font-medium text-slate-300 mb-2">Informações do Livro Selecionado:</h4>
-                <div className="text-sm">
-                  <span className="text-slate-400">Estoque disponível: </span>
-                  <span className={`font-semibold ${livroSelecionado.estoque < 10 ? "text-red-400" : "text-green-400"}`}>
-                    {livroSelecionado.estoque} unidades
-                  </span>
+            {formData.itens.map((item, index) => {
+              const livroSelecionado = livros.find(l => l.id.toString() === item.livro_id)
+              
+              return (
+                <div key={index} className="bg-slate-700/30 rounded-lg p-4 border border-slate-600">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-md font-medium text-white">Item {index + 1}</h4>
+                    {formData.itens.length > 1 && (
+                      <Button
+                        type="button"
+                        onClick={() => removeItem(index)}
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                        disabled={loading}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Livro *</label>
+                      <select
+                        value={item.livro_id}
+                        onChange={(e) => handleItemChange(index, "livro_id", e.target.value)}
+                        required
+                        disabled={loading}
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
+                      >
+                        <option value="">Selecione um livro</option>
+                        {livros.map((livro) => (
+                          <option key={livro.id} value={livro.id}>
+                            {livro.titulo} - R$ {livro.preco.toFixed(2)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Quantidade *</label>
+                      <input
+                        type="number"
+                        value={item.quantidade}
+                        onChange={(e) => handleItemChange(index, "quantidade", e.target.value)}
+                        min="1"
+                        required
+                        disabled={loading}
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Preço Unitário *</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={item.preco_unitario}
+                        onChange={(e) => handleItemChange(index, "preco_unitario", e.target.value)}
+                        required
+                        disabled={loading}
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
+                        placeholder="0,00"
+                      />
+                    </div>
+                  </div>
+
+                  {livroSelecionado && (
+                    <div className="mt-3 bg-slate-600/50 rounded p-3">
+                      <h4 className="text-sm font-medium text-slate-300 mb-1">Informações do Livro Selecionado:</h4>
+                      <div className="text-sm">
+                        <span className="text-slate-400">Estoque disponível: </span>
+                        <span className={`font-semibold ${livroSelecionado.estoque < 10 ? "text-red-400" : "text-green-400"}`}>
+                          {livroSelecionado.estoque} unidades
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              )
+            })}
+
+            <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-semibold text-white">Total do Pedido:</span>
+                <span className="text-2xl font-bold text-green-400">
+                  R$ {calcularTotal().toFixed(2)}
+                </span>
               </div>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <label className="block text-sm font-medium text-slate-300 mb-2">Endereço de Entrega *</label>
-            <textarea
-              name="endereco_entrega"
-              value={formData.endereco_entrega}
-              onChange={handleChange}
-              rows={3}
-              required
-              disabled={loading}
-              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-              placeholder="Digite o endereço completo para entrega..."
-            />
-          </div>
-
-          <div className="space-y-4">
-            <label className="block text-sm font-medium text-slate-300 mb-2">Observações</label>
-            <textarea
-              name="observacoes"
-              value={formData.observacoes}
-              onChange={handleChange}
-              rows={2}
-              disabled={loading}
-              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-              placeholder="Adicione observações sobre o pedido..."
-            />
+            </div>
           </div>
 
           <div className="flex gap-4 justify-end pt-4 border-t border-slate-700">
@@ -310,7 +373,7 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
             </Button>
             <Button 
               type="submit" 
-              disabled={loading}
+              disabled={loading || !formData.cliente_id || formData.itens.some(item => !item.livro_id)}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {loading ? "Criando..." : "Criar Pedido"}
