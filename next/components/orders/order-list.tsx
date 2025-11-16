@@ -10,6 +10,7 @@ export function OrderList() {
 const fetchOrders = async () => {
 
   const response = await getPedidos();
+  console.log("Fetched orders in OrderList:", response);
   return response;
 }
 
@@ -58,9 +59,9 @@ useEffect(() => {
             {orders.map((order) => (
               <tr key={order.id} className="hover:bg-slate-700/50 transition-colors">
                 <td className="py-4 px-6 text-white font-medium">{order.id}</td>
-                <td className="py-4 px-6 text-slate-300">{order.cliente}</td>
+                <td className="py-4 px-6 text-slate-300">{order.cliente.nome}</td>
                 <td className="py-4 px-6 text-slate-300">{order.data}</td>
-                <td className="py-4 px-6 text-slate-300">{order.items}</td>
+                <td className="py-4 px-6 text-slate-300">{order.items.length}</td>
                 <td className="py-4 px-6 text-white font-semibold">{order.total}</td>
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-2">
