@@ -88,7 +88,55 @@ async function create(req, res) {
 }
 
 async function list(req, res) {
-  const [rows] = await db.getPool().query("SELECT * FROM pedidos ");
-  res.status(200).json(rows);
+  try {
+    const [rows] = await db.getPool().query(`
+      SELECT 
+        p.id,
+        p.numero_negocio,
+        p.cliente_id,
+        p.usuario_id,
+        p.total,
+        p.status,
+        p.criado_em,
+        c.nome as cliente_nome,
+        c.email as cliente_email,
+        u.username as usuario_username,
+        u.nome_completo as usuario_nome,
+        COUNT(pi.id) as total_itens,
+        SUM(pi.quantidade) as total_livros
+      FROM pedidos p
+      LEFT JOIN clientes c ON p.cliente_id = c.id
+      LEFT JOIN usuarios u ON p.usuario_id = u.id
+      LEFT JOIN pedidos_itens pi ON p.id = pi.pedido_id
+      GROUP BY p.id
+      ORDER BY p.criado_em DESC
+    `);
+    
+    const pedidos = rows.map(pedido => ({
+      id: pedido.id,
+      numero_negocio: pedido.numero_negocio,
+      cliente: {
+        id: pedido.cliente_id,
+        nome: pedido.cliente_nome,
+        email: pedido.cliente_email
+      },
+      usuario: {
+        id: pedido.usuario_id,
+        username: pedido.usuario_username,
+        nome_completo: pedido.usuario_nome
+      },
+      total: parseFloat(pedido.total),
+      status: pedido.status,
+      criado_em: pedido.criado_em,
+      estatisticas: {
+        total_itens: parseInt(pedido.total_itens),
+        total_livros: parseInt(pedido.total_livros)
+      }
+    }));
+ res.status(200).json(pedidos);
+  } catch (err) {
+    console.error("Erro ao listar pedidos:", err);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
 }
 module.exports = { create, list };
