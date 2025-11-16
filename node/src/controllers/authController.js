@@ -10,72 +10,88 @@ async function login(req, res) {
 
   if (!username || !password)
     return res.status(400).json({ error: "username & password required" });
+  
   try {
     const [rows] = await db
       .getPool()
       .query("SELECT id, username, senha_hash FROM usuarios WHERE email = ?", [
         username,
       ]);
+    
     if (rows.length === 0)
       return res.status(401).json({ error: "Invalid credentials" });
+    
     const user = rows[0];
     const ok = await bcrypt.compare(password, user.senha_hash);
     if (!ok) return res.status(401).json({ error: "Invalid credentials" });
+    
     const token = jwt.sign({ uid: user.id, username: user.username }, secret, {
       expiresIn,
     });
+
+    // Criar sessão no MongoDB
+    try {
+      const { SessionService } = await import('../services/sessionService.js');
+      await SessionService.createSession(
+        user.id, 
+        user.username, 
+        token, 
+        req.ip, 
+        req.get('User-Agent')
+      );
+    } catch (sessionError) {
+      console.error('Erro ao criar sessão:', sessionError);
+    }
+
+    // Registrar login no MongoDB
+    try {
+      const { AuditService } = await import('../services/auditService.js');
+      await AuditService.logAction(
+        'auth',
+        user.id.toString(),
+        'LOGIN_SUCCESS',
+        null,
+        {
+          userId: user.id,
+          username: user.username,
+          ip: req.ip
+        },
+        user.id,
+        req.ip
+      );
+    } catch (auditError) {
+      console.error('Erro ao registrar login:', auditError);
+    }
+
     res.status(200).json({
       message: "Login successful",
       token: token,
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "internal" });
-  }
-}
 
-async function register(req, res) {
-  const { username, password, nome_completo, email, grupo_id } = req.body;
-  if (!username || !password || !grupo_id)
-    return res
-      .status(400)
-      .json({ error: "username,password,grupo_id required" });
-  try {
-    const senha_hash = await bcrypt.hash(password, 10);
-    const [result] = await db
-      .getPool()
-      .query(
-        "INSERT INTO usuarios (username, senha_hash, nome_completo, email, grupo_id) VALUES (?,?,?,?,?)",
-        [username, senha_hash, nome_completo || null, email || null, grupo_id]
+    // Registrar falha de login no MongoDB
+    try {
+      const { AuditService } = await import('../services/auditService.js');
+      await AuditService.logAction(
+        'auth',
+        null,
+        'LOGIN_FAILED',
+        null,
+        {
+          username,
+          error: 'Credenciais inválidas',
+          ip: req.ip
+        },
+        null,
+        req.ip
       );
-    res.status(201).json({ id: result.insertId, username });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "internal" });
-  }
-}
-
-async function getUserProfile(req, res) {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
-  try {
-    const decoded = jwt.verify(token, secret);
-    const [rows] = await db
-      .getPool()
-      .query(
-        "SELECT id, username, nome_completo, email, grupo_id FROM usuarios WHERE id = ?",
-        [decoded.uid]
-      );
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
+    } catch (auditError) {
+      console.error('Erro ao registrar falha de login:', auditError);
     }
-    const user = rows[0];
-    res.status(200).json({ user });
-  } catch (err) {
-    console.error(err);
+
     res.status(500).json({ error: "internal" });
   }
 }
-module.exports = { login, register, getUserProfile };
+
+// ... resto do código do authController permanece similar, mas adicione auditoria

@@ -9,4 +9,7 @@ router.get('/', authenticate, authorize(['ADMIN','LEITURA']), usuariosController
 // Atualizar usuário (ADMIN)
 router.put('/:id', authenticate, authorize(['ADMIN']), usuariosController.update);
 
+// Nova rota: Estatísticas de usuários
+router.get('/stats', authenticate, authorize(['ADMIN']), usuariosController.getStats);
+
 module.exports = router;

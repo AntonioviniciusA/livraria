@@ -15,7 +15,8 @@ async function list(req, res) {
       GROUP BY g.id
       ORDER BY g.nome
     `);
-     const grupos = rows.map(grupo => ({
+    
+    const grupos = rows.map(grupo => ({
       id: grupo.id,
       nome: grupo.nome,
       descricao: grupo.descricao,
@@ -23,6 +24,26 @@ async function list(req, res) {
       data_criacao: grupo.data_criacao,
       total_usuarios: parseInt(grupo.total_usuarios)
     }));
+
+    // Registrar consulta de grupos no MongoDB
+    try {
+      const { AuditService } = await import('../services/auditService.js');
+      await AuditService.logAction(
+        'grupos_usuarios',
+        'LIST',
+        'READ',
+        null,
+        {
+          total_grupos: grupos.length,
+          userId: req.user.id
+        },
+        req.user.id,
+        req.ip
+      );
+    } catch (auditError) {
+      console.error('Erro ao registrar consulta de grupos:', auditError);
+    }
+
     res.json(grupos);
   } catch (error) {
     console.error('Erro ao buscar grupos:', error);

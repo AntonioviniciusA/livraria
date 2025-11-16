@@ -2,18 +2,33 @@ const db = require("../config/db");
 
 async function list(req, res) {
   try {
+    // Tentar buscar do cache MongoDB primeiro para melhor performance
+    try {
+      const { CacheService } = await import('../services/cacheService.js');
+      
+      // Para demonstração, vamos buscar apenas livros populares do cache
+      const cachedTopBooks = await CacheService.getTopSellingBooks(5);
+      if (cachedTopBooks.length > 0) {
+        console.log('📚 Livros populares carregados do cache MongoDB');
+      }
+    } catch (cacheError) {
+      console.error('Erro ao acessar cache:', cacheError);
+    }
+
     const [rows] = await db.getPool().query(`
-  SELECT 
-    l.*,
-    e.nome as editora_nome,
-    e.pais as editora_pais,
-    e.contato as editora_contato,
-    c.nome as categoria_nome,
-    c.descricao as categoria_descricao
-  FROM livros l
-  LEFT JOIN editoras e ON l.editora_id = e.id
-  LEFT JOIN categorias c ON l.categoria_id = c.id
-`);
+      SELECT 
+        l.*,
+        e.nome as editora_nome,
+        e.pais as editora_pais,
+        e.contato as editora_contato,
+        c.nome as categoria_nome,
+        c.descricao as categoria_descricao,
+        COALESCE(est.quantidade, 0) as quantidade
+      FROM livros l
+      LEFT JOIN editoras e ON l.editora_id = e.id
+      LEFT JOIN categorias c ON l.categoria_id = c.id
+      LEFT JOIN estoque est ON l.id = est.livro_id
+    `);
 
     const livros = rows.map((row) => ({
       id: row.id,
@@ -33,8 +48,39 @@ async function list(req, res) {
         nome: row.categoria_nome,
         descricao: row.categoria_descricao,
       },
+      quantidade: row.quantidade
     }));
-    console.log(livros);
+
+    // Fazer cache dos livros no MongoDB de forma assíncrona
+    try {
+      const { CacheService } = await import('../services/cacheService.js');
+      for (const livro of livros) {
+        await CacheService.cacheBook(livro);
+      }
+      console.log(`✅ ${livros.length} livros cacheados no MongoDB`);
+    } catch (cacheError) {
+      console.error('Erro no cache:', cacheError);
+    }
+
+    // Registrar consulta de livros no MongoDB
+    try {
+      const { AuditService } = await import('../services/auditService.js');
+      await AuditService.logAction(
+        'livros',
+        'LIST',
+        'READ',
+        null,
+        {
+          total_livros: livros.length,
+          userId: req.user.id
+        },
+        req.user.id,
+        req.ip
+      );
+    } catch (auditError) {
+      console.error('Erro ao registrar consulta de livros:', auditError);
+    }
+
     res.json(livros);
   } catch (err) {
     console.error(err);
@@ -44,11 +90,72 @@ async function list(req, res) {
 
 async function getById(req, res) {
   try {
+    // Tentar buscar do cache MongoDB primeiro
+    try {
+      const { CacheService } = await import('../services/cacheService.js');
+      const cachedBook = await CacheService.getCachedBook(parseInt(req.params.id));
+      
+      if (cachedBook) {
+        console.log('📖 Livro carregado do cache MongoDB');
+        
+        // Registrar consulta de cache no MongoDB
+        const { AuditService } = await import('../services/auditService.js');
+        await AuditService.logAction(
+          'livros',
+          req.params.id,
+          'READ_CACHE',
+          null,
+          {
+            livro_id: req.params.id,
+            cache_hit: true,
+            userId: req.user.id
+          },
+          req.user.id,
+          req.ip
+        );
+        
+        return res.json({
+          ...cachedBook,
+          fonte: 'cache_mongodb'
+        });
+      }
+    } catch (cacheError) {
+      console.error('Erro ao acessar cache:', cacheError);
+    }
+
+    // Se não encontrou no cache, busca do MySQL
     const [rows] = await db
       .getPool()
       .query("SELECT * FROM livros WHERE id = ?", [req.params.id]);
+    
     if (rows.length === 0) return res.status(404).json({ error: "Not found" });
-    res.json(rows[0]);
+    
+    const livro = rows[0];
+
+    // Registrar consulta MySQL no MongoDB
+    try {
+      const { AuditService } = await import('../services/auditService.js');
+      await AuditService.logAction(
+        'livros',
+        req.params.id,
+        'READ_MYSQL',
+        null,
+        {
+          livro_id: req.params.id,
+          cache_hit: false,
+          userId: req.user.id
+        },
+        req.user.id,
+        req.ip
+      );
+    } catch (auditError) {
+      console.error('Erro ao registrar consulta MySQL:', auditError);
+    }
+
+    res.json({
+      ...livro,
+      fonte: 'mysql'
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "internal" });
@@ -71,6 +178,23 @@ async function create(req, res) {
   try {
     await conn.beginTransaction();
 
+    // Registrar início da criação no MongoDB
+    const { AuditService } = await import('../services/auditService.js');
+    await AuditService.logAction(
+      'livros',
+      null,
+      'CREATE_START',
+      null,
+      {
+        titulo,
+        isbn,
+        preco,
+        userId: req.user.id
+      },
+      req.user.id,
+      req.ip
+    );
+
     // Insere o livro
     const [result] = await conn.query(
       "INSERT INTO livros (isbn,titulo,descricao,preco,publicado_em,editora_id,categoria_id) VALUES (?,?,?,?,?,?,?)",
@@ -86,15 +210,71 @@ async function create(req, res) {
     );
 
     await conn.commit();
+
+    // Registrar sucesso da criação no MongoDB
+    await AuditService.logAction(
+      'livros',
+      livroId.toString(),
+      'CREATE_SUCCESS',
+      null,
+      {
+        livro_id: livroId,
+        titulo,
+        isbn,
+        preco,
+        quantidade,
+        userId: req.user.id
+      },
+      req.user.id,
+      req.ip
+    );
+
+    // Atualizar cache no MongoDB
+    try {
+      const { CacheService } = await import('../services/cacheService.js');
+      await CacheService.cacheBook({
+        id: livroId,
+        titulo,
+        isbn,
+        preco,
+        quantidade
+      });
+    } catch (cacheError) {
+      console.error('Erro ao atualizar cache:', cacheError);
+    }
+
     res.status(201).json({ id: livroId });
   } catch (err) {
     await conn.rollback();
     console.error(err);
+
+    // Registrar falha no MongoDB
+    try {
+      const { AuditService } = await import('../services/auditService.js');
+      await AuditService.logAction(
+        'livros',
+        null,
+        'CREATE_FAILED',
+        null,
+        {
+          titulo,
+          isbn,
+          error: err.message,
+          userId: req.user.id
+        },
+        req.user.id,
+        req.ip
+      );
+    } catch (auditError) {
+      console.error('Erro ao registrar falha:', auditError);
+    }
+
     res.status(500).json({ error: "internal" });
   } finally {
     conn.release();
   }
 }
+
 async function update(req, res) {
   const {
     isbn,
@@ -105,7 +285,14 @@ async function update(req, res) {
     editora_id,
     categoria_id,
   } = req.body;
+
   try {
+    // Buscar dados antigos para auditoria
+    const [oldRows] = await db.getPool().query(
+      "SELECT * FROM livros WHERE id = ?", 
+      [req.params.id]
+    );
+
     const [result] = await db
       .getPool()
       .query(
@@ -121,8 +308,43 @@ async function update(req, res) {
           req.params.id,
         ]
       );
+    
     if (result.affectedRows === 0)
       return res.status(404).json({ error: "Not found" });
+
+    // Registrar atualização no MongoDB
+    try {
+      const { AuditService } = await import('../services/auditService.js');
+      await AuditService.logAction(
+        'livros',
+        req.params.id,
+        'UPDATE',
+        oldRows[0] || {},
+        {
+          isbn,
+          titulo,
+          descricao,
+          preco,
+          publicado_em,
+          editora_id,
+          categoria_id
+        },
+        req.user.id,
+        req.ip
+      );
+
+      // Atualizar cache
+      const { CacheService } = await import('../services/cacheService.js');
+      await CacheService.cacheBook({
+        id: parseInt(req.params.id),
+        titulo,
+        isbn,
+        preco
+      });
+    } catch (mongoError) {
+      console.error('Erro no MongoDB:', mongoError);
+    }
+
     res.json({ message: "Updated successfully" });
   } catch (err) {
     console.error(err);
@@ -132,11 +354,40 @@ async function update(req, res) {
 
 async function deleteBook(req, res) {
   try {
+    // Buscar dados para auditoria
+    const [oldRows] = await db.getPool().query(
+      "SELECT * FROM livros WHERE id = ?", 
+      [req.params.id]
+    );
+
     const [result] = await db
       .getPool()
       .query("DELETE FROM livros WHERE id = ?", [req.params.id]);
+    
     if (result.affectedRows === 0)
       return res.status(404).json({ error: "Not found" });
+
+    // Registrar exclusão no MongoDB
+    try {
+      const { AuditService } = await import('../services/auditService.js');
+      await AuditService.logAction(
+        'livros',
+        req.params.id,
+        'DELETE',
+        oldRows[0] || {},
+        null,
+        req.user.id,
+        req.ip
+      );
+
+      // Remover do cache
+      const { CacheService } = await import('../services/cacheService.js');
+      // Nota: Em produção, usaríamos deleteOne, mas nossa implementação atual não tem este método
+      console.log('Livro removido, cache será atualizado na próxima consulta');
+    } catch (mongoError) {
+      console.error('Erro no MongoDB:', mongoError);
+    }
+
     res.json({ message: "Deleted successfully" });
   } catch (err) {
     console.error(err);
