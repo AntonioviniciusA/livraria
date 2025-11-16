@@ -6,17 +6,27 @@ import { getPedidos } from "@/api/pedidos"
 
 export function OrderStats() {
   const [totalPedidos, setTotalPedidos] = useState(0)
-
+  const [pedidosEntregues, setPedidosEntregues] = useState(0)
+  const [pedidosProcessando, setPedidosProcessando] = useState(0)
+  const [pedidosPendentes, setPedidosPendentes] = useState(0)
   const stats = [
     { label: "Total de Pedidos", value: totalPedidos, icon: ShoppingCart, color: "blue" },
-    { label: "Entregues", value: "245", icon: TrendingUp, color: "green" },
-    { label: "Processando", value: "67", icon: Clock, color: "yellow" },
-    { label: "Pendentes", value: "30", icon: AlertCircle, color: "red" },
+    { label: "Entregues", value: pedidosEntregues, icon: TrendingUp, color: "green" },
+    { label: "Processando", value: pedidosProcessando, icon: Clock, color: "yellow" },
+    { label: "Pendentes", value: pedidosPendentes, icon: AlertCircle, color: "red" },
   ]
 
   async function fetchStats() {
     const response = await getPedidos()
     setTotalPedidos(response.length)
+
+    const entregues = response.filter((pedido: any) => pedido.status === "ENVIADO").length
+    const processando = response.filter((pedido: any) => pedido.status === "CANCELADO").length
+    const pendentes = response.filter((pedido: any) => pedido.status === "ABERTO").length
+
+    setPedidosEntregues(entregues)
+    setPedidosProcessando(processando)
+    setPedidosPendentes(pendentes)
   }
 
   useEffect(() => {
