@@ -1,14 +1,27 @@
 "use client"
 
 import { ShoppingCart, TrendingUp, Clock, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { getPedidos } from "@/api/pedidos"
 
 export function OrderStats() {
+  const [totalPedidos, setTotalPedidos] = useState(0)
+
   const stats = [
-    { label: "Total de Pedidos", value: "342", icon: ShoppingCart, color: "blue" },
+    { label: "Total de Pedidos", value: totalPedidos, icon: ShoppingCart, color: "blue" },
     { label: "Entregues", value: "245", icon: TrendingUp, color: "green" },
     { label: "Processando", value: "67", icon: Clock, color: "yellow" },
     { label: "Pendentes", value: "30", icon: AlertCircle, color: "red" },
   ]
+
+  async function fetchStats() {
+    const response = await getPedidos()
+    setTotalPedidos(response.length)
+  }
+
+  useEffect(() => {
+    fetchStats()
+  }, [])
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
