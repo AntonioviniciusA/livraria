@@ -1,8 +1,34 @@
 const db = require("../config/db");
 
 async function list(req, res) {
-  const [rows] = await db.getPool().query("SELECT * FROM editoras");
-  res.json(rows);
+  try {
+    const [rows] = await db.getPool().query(`
+      SELECT 
+        e.id,
+        e.nome,
+        e.pais,
+        e.contato,
+        DATE_FORMAT(e.data_cadastro, '%d/%m/%Y') as data_cadastro,
+        COUNT(l.id) as total_livros,
+      FROM editoras e
+      LEFT JOIN livros l ON e.id = l.editora_id
+      GROUP BY e.id
+      ORDER BY e.nome
+    `);
+    
+  const editoras = rows.map(editora => ({
+  id: editora.id,
+  nome: editora.nome,
+  pais: editora.pais,
+  contato: editora.contato,
+  data_cadastro: editora.data_cadastro,
+  total_livros: parseInt(editora.total_livros),
+}));
+    res.json(editoras);
+  } catch (error) {
+    console.error('Erro ao buscar editoras:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 }
 
 async function create(req, res) {
