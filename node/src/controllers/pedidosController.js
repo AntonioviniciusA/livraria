@@ -88,11 +88,7 @@ async function create(req, res) {
 }
 
 async function list(req, res) {
-  const [rows] = await db
-    .getPool()
-    .query(
-      "SELECT p.*, l.titulo AS livro_titulo, l.isbn AS livro_isbn, l.preco AS livro_preco, l.descricao AS livro_descricao FROM pedidos p LEFT JOIN livros l ON p.livro_id = l.id"
-    );
+  const [rows] = await db.getPool().query("SELECT * FROM pedidos ");
   res.status(200).json(rows);
 }
 module.exports = { create, list };

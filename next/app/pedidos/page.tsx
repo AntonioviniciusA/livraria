@@ -19,9 +19,9 @@ export default function PedidosPage() {
 
   async function getProfile() {
     const profile = await getUserProfile();
-    console.log("User profile:", profile);
+   
     setUser(profile);
-    console.log("User state set to:", user.email);
+    
   }
   async function fetchPedidos() {
     const pedidos = await getPedidos();

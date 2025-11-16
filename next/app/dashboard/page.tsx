@@ -15,9 +15,9 @@ export default function DashboardPage() {
 
   async function getProfile() {
     const profile = await getUserProfile();
-    console.log("User profile:", profile);
+   console.log("User profile:", profile);
     setUser(profile);
-    console.log("User state set to:", user.email);
+  
   }
 
 
@@ -38,7 +38,7 @@ getProfile();
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-          <p className="text-slate-400 mt-2">Bem-vindo de volta, {user.email}</p>
+          <p className="text-slate-400 mt-2">Bem-vindo de volta, {user.nome_completo}</p>
         </div>
 
         {/* Stats Grid */}

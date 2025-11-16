@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useSystemName } from "@/hooks/use-system-name"
+import { getUserProfile } from "@/api/auth"
 
 export function SettingsTabs() {
   const [activeTab, setActiveTab] = useState<"empresa" | "sistema" | "usuarios">("empresa")
@@ -153,12 +154,15 @@ function SystemSettings() {
 }
 
 function UsersSettings() {
-  const users = [
-    { id: 1, name: "Admin Master", email: "admin@faca.com", role: "Administrador" },
-    { id: 2, name: "Gerente Estoque", email: "estoque@faca.com", role: "Gerente" },
-    { id: 3, name: "Vendedor", email: "vendedor@faca.com", role: "Vendedor" },
-  ]
+ const [users, setUsers] = useState<any[]>([])
+const fetchUsers = async () => {
+  const response = await getUserProfile();
+  setUsers(response);
+}
 
+useEffect(() => {
+  fetchUsers();
+}, []);
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 space-y-6">
       <div className="flex items-center justify-between mb-4">

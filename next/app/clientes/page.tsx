@@ -16,9 +16,7 @@ export default function ClientesPage() {
 
   async function getProfile() {
     const profile = await getUserProfile();
-    console.log("User profile:", profile);
     setUser(profile);
-    console.log("User state set to:", user.email);
   }
 
 
