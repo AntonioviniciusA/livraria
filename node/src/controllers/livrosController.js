@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const { addLog } = require("../services/logService");
 
 async function list(req, res) {
   try {
@@ -34,7 +35,7 @@ async function list(req, res) {
         descricao: row.categoria_descricao,
       },
     }));
-    console.log(livros);
+
     res.json(livros);
   } catch (err) {
     console.error(err);
@@ -66,7 +67,7 @@ async function create(req, res) {
     editora_id,
     categoria_id,
   } = req.body;
-
+  const username = req.user.username;
   const conn = await db.getPool().getConnection();
   try {
     await conn.beginTransaction();
@@ -86,6 +87,16 @@ async function create(req, res) {
     );
 
     await conn.commit();
+
+    await addLog({
+      type: "Registro de livro: " + titulo,
+      message: "Livro registrado",
+      user: username,
+      data: {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+    });
     res.status(201).json({ id: livroId });
   } catch (err) {
     await conn.rollback();
@@ -137,6 +148,16 @@ async function deleteBook(req, res) {
       .query("DELETE FROM livros WHERE id = ?", [req.params.id]);
     if (result.affectedRows === 0)
       return res.status(404).json({ error: "Not found" });
+
+    await addLog({
+      type: "Apagando de livro, id: " + req.params.id,
+      message: "Livro apagado",
+      user: username,
+      data: {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+    });
     res.json({ message: "Deleted successfully" });
   } catch (err) {
     console.error(err);

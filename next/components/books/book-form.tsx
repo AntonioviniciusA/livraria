@@ -9,8 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { X, Plus } from "lucide-react"
 import { maskISBN, maskCurrency } from "@/lib/input-masks"
 import { createLivro } from "@/api/livros"
-import {createEditora, getEditoras} from "@/api/editoras"
-import {createCategoria, getCategorias} from "@/api/categorias"
+import { createEditora, getEditoras } from "@/api/editoras"
+import { createCategoria, getCategorias } from "@/api/categorias"
 
 interface BookFormProps {
   onClose: () => void
@@ -56,20 +56,21 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
     descricao: ""
   })
   const [loading, setLoading] = useState(false)
+  const [modalLoading, setModalLoading] = useState(false)
 
   // Carregar editoras e categorias
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-          const editorasData = await getEditoras();
-          console.log("Editoras data:", editorasData);
-          setEditoras(editorasData)
-    
-          const categoriasData = await getCategorias();
-          console.log("Categorias data:", categoriasData);
-          setCategorias(categoriasData)
-        
+        const editorasData = await getEditoras();
+        console.log("Editoras data:", editorasData);
+        setEditoras(editorasData)
+
+        const categoriasData = await getCategorias();
+        console.log("Categorias data:", categoriasData);
+        setCategorias(categoriasData)
+
       } catch (error) {
         console.error("Erro ao carregar dados:", error)
       } finally {
@@ -114,9 +115,9 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
       }
 
       const novoLivro = await createLivro(livroData)
-      
+
       onAdd(novoLivro)
-      
+ window.location.reload()
       onClose()
     } catch (error) {
       console.error("Erro ao criar livro:", error)
@@ -133,22 +134,25 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
     }
 
     try {
-      setLoading(true)
-      const response = await createEditora(novaEditora);
-     
-  
-        const editoraCriada = await response.json()
+      setModalLoading(true)
+      const editoraCriada = await createEditora(novaEditora);
+      
+      console.log("Editora criada:", editoraCriada);
+      
+      if (editoraCriada && editoraCriada.id) {
         setEditoras([...editoras, editoraCriada])
         setFormData({ ...formData, editora_id: editoraCriada.id.toString() })
         setNovaEditora({ nome: "", pais: "", contato: "" })
         setShowEditoraModal(false)
-      
-      alert("Editora criada com sucesso!")
+        alert("Editora criada com sucesso!")
+      } else {
+        throw new Error("Resposta inválida da API")
+      }
     } catch (error) {
       console.error("Erro ao criar editora:", error)
       alert("Erro ao criar editora")
     } finally {
-      setLoading(false)
+      setModalLoading(false)
     }
   }
 
@@ -159,21 +163,26 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
     }
 
     try {
-      setLoading(true)
-      const response = await createCategoria(novaCategoria);
-
-        const categoriaCriada = await response.json()
+      setModalLoading(true)
+      const categoriaCriada = await createCategoria(novaCategoria);
+      
+      console.log("Categoria criada:", categoriaCriada);
+      
+      if (categoriaCriada && categoriaCriada.id) {
         setCategorias([...categorias, categoriaCriada])
         setFormData({ ...formData, categoria_id: categoriaCriada.id.toString() })
         setNovaCategoria({ nome: "", descricao: "" })
         setShowCategoriaModal(false)
-    
-      alert("Categoria criada com sucesso!")
+        alert("Categoria criada com sucesso!")
+       
+      } else {
+        throw new Error("Resposta inválida da API")
+      }
     } catch (error) {
       console.error("Erro ao criar categoria:", error)
       alert("Erro ao criar categoria")
     } finally {
-      setLoading(false)
+      setModalLoading(false)
     }
   }
 
@@ -235,7 +244,8 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
             required
             disabled={loading}
           />
-           <Input
+          
+          <Input
             placeholder="Quantidade de estoque"
             value={formData.quantidade}
             onChange={handleChange}
@@ -343,7 +353,7 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
                 variant="ghost" 
                 onClick={() => setShowEditoraModal(false)}
                 className="text-slate-400 hover:text-white"
-                disabled={loading}
+                disabled={modalLoading}
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -357,7 +367,7 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
                 name="nome"
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                 required
-                disabled={loading}
+                disabled={modalLoading}
               />
               <Input
                 placeholder="País"
@@ -365,7 +375,7 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
                 onChange={handleEditoraChange}
                 name="pais"
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                disabled={loading}
+                disabled={modalLoading}
               />
               <Input
                 placeholder="Contato"
@@ -373,7 +383,7 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
                 onChange={handleEditoraChange}
                 name="contato"
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                disabled={loading}
+                disabled={modalLoading}
               />
             </div>
 
@@ -381,15 +391,15 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
               <Button 
                 onClick={criarNovaEditora} 
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
-                disabled={loading}
+                disabled={modalLoading}
               >
-                {loading ? "Criando..." : "Criar Editora"}
+                {modalLoading ? "Criando..." : "Criar Editora"}
               </Button>
               <Button
                 onClick={() => setShowEditoraModal(false)}
                 variant="outline"
                 className="flex-1 border-slate-600 text-slate-300 bg-transparent hover:bg-slate-700"
-                disabled={loading}
+                disabled={modalLoading}
               >
                 Cancelar
               </Button>
@@ -409,7 +419,7 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
                 variant="ghost" 
                 onClick={() => setShowCategoriaModal(false)}
                 className="text-slate-400 hover:text-white"
-                disabled={loading}
+                disabled={modalLoading}
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -423,7 +433,7 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
                 name="nome"
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                 required
-                disabled={loading}
+                disabled={modalLoading}
               />
               <Textarea
                 placeholder="Descrição"
@@ -431,7 +441,7 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
                 onChange={handleCategoriaChange}
                 name="descricao"
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 min-h-[100px]"
-                disabled={loading}
+                disabled={modalLoading}
               />
             </div>
 
@@ -439,15 +449,15 @@ export function BookForm({ onClose, onAdd }: BookFormProps) {
               <Button 
                 onClick={criarNovaCategoria} 
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
-                disabled={loading}
+                disabled={modalLoading}
               >
-                {loading ? "Criando..." : "Criar Categoria"}
+                {modalLoading ? "Criando..." : "Criar Categoria"}
               </Button>
               <Button
                 onClick={() => setShowCategoriaModal(false)}
                 variant="outline"
                 className="flex-1 border-slate-600 text-slate-300 bg-transparent hover:bg-slate-700"
-                disabled={loading}
+                disabled={modalLoading}
               >
                 Cancelar
               </Button>

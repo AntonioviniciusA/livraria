@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 interface Book {
   id: number
   titulo: string
-  descricao: string
+  descricao?: string // Tornando opcional
   isbn: string
   preco: number
   publicado_em: string
@@ -32,13 +32,21 @@ export function BookList({ books, onUpdate, onDelete }: BookListProps) {
     return date.toLocaleDateString('pt-BR')
   }
 
-  
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(value)
-}
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value)
+  }
+
+  // Função para obter descrição segura
+  const getSafeDescription = (descricao: string | undefined) => {
+    if (!descricao) return "Sem descrição"
+    
+    return descricao.length > 100 
+      ? `${descricao.substring(0, 100)}...` 
+      : descricao
+  }
 
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
@@ -62,18 +70,15 @@ const formatCurrency = (value: number) => {
                   <div>
                     <div className="text-white font-medium">{book.titulo}</div>
                     <div className="text-sm text-slate-400 mt-1 line-clamp-2">
-                      {book.descricao.length > 100 
-                        ? `${book.descricao.substring(0, 100)}...` 
-                        : book.descricao
-                      }
+                      {getSafeDescription(book.descricao)}
                     </div>
                   </div>
                 </td>
                 <td className="py-4 px-6 text-slate-300 font-mono">{book.isbn}</td>
-                <td className="py-4 px-6 text-slate-300">{book.editora.nome}</td>
+                <td className="py-4 px-6 text-slate-300">{book.editora?.nome}</td>
                 <td className="py-4 px-6">
                   <span className="px-3 py-1 rounded-full text-xs bg-blue-900/50 text-blue-300">
-                    {book.categoria.nome}
+                    {book.categoria?.nome}
                   </span>
                 </td>
                 <td className="py-4 px-6 text-white font-semibold">
