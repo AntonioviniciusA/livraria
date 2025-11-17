@@ -104,9 +104,10 @@ async function create(req, res) {
         userAgent: req.headers["user-agent"],
       },
     });
+    console.log(result);
     res.status(201).json({
-      id: result.insertId,
       message: "Cliente criado com sucesso",
+      cliente: result,
     });
   } catch (error) {
     console.error("Erro ao criar cliente:", error);

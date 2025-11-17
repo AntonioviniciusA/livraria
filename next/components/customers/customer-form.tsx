@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { X } from "lucide-react"
 import { maskPhone, maskCPF, maskCEP } from "@/lib/input-masks" // Você precisará criar essas máscaras
 import { createCliente } from "@/api/clientes" // Assumindo que esta API existe
-
 interface CustomerFormProps {
   onClose: () => void
   onAdd: (customer: any) => void
