@@ -4,19 +4,25 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { SettingsTabs } from "@/components/settings/settings-tabs"
+import { getToken, getUserProfile } from "@/api/auth"
 
 export default function ConfiguracoesPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (!userData) {
-      router.push("/")
-    } else {
-      setUser(JSON.parse(userData))
-    }
-  }, [router])
+   async function getProfile() {
+     const profile = await getUserProfile();
+     setUser(profile);
+   }
+ 
+ 
+ useEffect(() => {
+   const token = getToken();
+   if (!token) {
+     router.push("/");
+   }
+ getProfile();
+ }, []);
 
  if (user === null) return <div className="text-white">Carregando...</div>
 
