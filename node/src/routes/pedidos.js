@@ -1,13 +1,30 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const pedidosController = require('../controllers/pedidosController');
-const { authenticate, authorize } = require('../middleware/auth');
+const pedidosController = require("../controllers/pedidosController");
+const { authenticate, authorize } = require("../middleware/auth");
 
 // Criar pedido (transacional) - ADMIN ou ATENDIMENTO
 // Body esperado: { cliente_id: number, itens: [{ livro_id, quantidade }, ...] }
-router.post('/', authenticate, authorize(['ADMIN','ATENDIMENTO']), pedidosController.create);
+router.post(
+  "/",
+  authenticate,
+  authorize(["ADMIN", "ATENDIMENTO"]),
+  pedidosController.create
+);
 
 // (Opcional) listar pedidos, detalhes etc. se implementar controllers correspondentes
-router.get('/', authenticate, authorize(['ADMIN','ATENDIMENTO']), pedidosController.list);
+router.get(
+  "/",
+  authenticate,
+  authorize(["ADMIN", "ATENDIMENTO"]),
+  pedidosController.list
+);
+
+router.delete(
+  "/:id",
+  authenticate,
+  authorize(["ADMIN", "ATENDIMENTO"]),
+  pedidosController.delete
+);
 
 module.exports = router;

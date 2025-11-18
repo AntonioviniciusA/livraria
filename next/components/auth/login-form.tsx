@@ -31,7 +31,7 @@ export function LoginForm({ onLoadingChange, isLoading }: LoginFormProps) {
       console.log("password", password);
       onLoadingChange(false);
       router.refresh();
-      router.push("/dashboard");
+      router.push("/livros");
     } catch (error) {
       onLoadingChange(false);
       setError("Falha ao entrar. Verifique suas credenciais.");

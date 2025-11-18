@@ -10,7 +10,6 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: BookOpen, label: "Livros", href: "/livros" },
   { icon: ShoppingCart, label: "Pedidos", href: "/pedidos" },
   { icon: Users, label: "Clientes", href: "/clientes" },

@@ -5,17 +5,10 @@ import { Edit, Trash2, Eye } from "lucide-react"
 import { useState, useEffect } from "react"
 import { getClientes } from "@/api/clientes"
 
-export function CustomerList() {
-  const [clientes, setClientes] = useState<any[]>([]);
+export function CustomerList({clientes, onUpdate, onDelete}: {clientes: any[], onUpdate: (customer: any) => void, onDelete: (id: number) => void}) {
 
-  async function fetchClientes() {
-    const response = await getClientes();
-    setClientes(response);
-  }
 
-  useEffect(() => {
-    fetchClientes();
-  }, []);
+ 
     
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
@@ -48,7 +41,7 @@ export function CustomerList() {
                     <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300">
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300">
+                    <Button onClick={() => onDelete(cliente.id)} size="sm" variant="ghost" className="text-red-400 hover:text-red-300">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>

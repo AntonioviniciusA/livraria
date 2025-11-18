@@ -9,7 +9,8 @@ import { OrderFormModal } from "@/components/orders/order-form-modal"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { getUserProfile, getToken } from "@/api/auth"
-import { createPedido, getPedidos } from "@/api/pedidos"
+import { createPedido, getPedidos, deletePedido } from "@/api/pedidos"
+
 export default function PedidosPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
@@ -28,6 +29,35 @@ export default function PedidosPage() {
     console.log("Pedidos fetched:", pedidos);
      setPurchases(pedidos)
   }
+
+  async function handleDeleteOrder(orderId: number) {
+ try {
+     // Call your API to delete the order
+    const response = await deletePedido(orderId);
+    if (response) {
+      // Refresh the order list after deletion
+      fetchPedidos();
+    }
+ } catch (error) {
+    console.error("Error deleting order:", error);
+ }
+  }
+
+  const fetchOrders = async () => {
+
+  const response = await getPedidos();
+  console.log("Fetched orders in OrderList:", response);
+  return response;
+}
+
+const [orders, setOrders] = useState<any[]>([]);
+
+useEffect(() => {
+  fetchOrders().then((data) => {
+    setOrders(data);
+    console.log("Orders fetched:", data);
+  });
+}, []);
 
 
 useEffect(() => {
@@ -68,10 +98,22 @@ useEffect(() => {
             </Button>
         </div>
           <>
-            <OrderStats />
-            <OrderList />
+            <OrderStats 
+
+            />
+            <OrderList
+                orders={orders}
+                onDelete={ (id) => {handleDeleteOrder(id)
+                setOrders(orders.filter(order => order.id !== id));
+              } 
+               } 
+
+             />
           </>
-        <OrderFormModal onAdd={setIsOrderFormOpen} isOpen={isOrderFormOpen} onClose={() => setIsOrderFormOpen(false)} />
+        <OrderFormModal onAdd={setIsOrderFormOpen} isOpen={isOrderFormOpen} onClose={() =>{setIsOrderFormOpen(false)
+        fetchPedidos()  
+
+        } } />
       </div>
     </DashboardLayout>
   )

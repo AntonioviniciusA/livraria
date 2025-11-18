@@ -142,4 +142,48 @@ async function list(req, res) {
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 }
-module.exports = { create, list };
+
+async function deletePedido(req, res) {
+  const pedidoId = req.params.id;
+  const conn = await db.getPool().getConnection();
+  try {
+    await conn.beginTransaction();
+    // Verificar se o pedido existe
+    const [pedidoRows] = await conn.query(
+      "SELECT * FROM pedidos WHERE id = ? FOR UPDATE",
+      [pedidoId]
+    );
+    if (pedidoRows.length === 0) {
+      throw new Error(`Pedido ${pedidoId} não encontrado`);
+    }
+    // Restaurar o estoque dos itens do pedido
+    const [itensRows] = await conn.query(
+      "SELECT livro_id, quantidade FROM pedidos_itens WHERE pedido_id = ?",
+      [pedidoId]
+    );
+    for (const item of itensRows) {
+      await conn.query(
+        "UPDATE estoque SET quantidade = quantidade + ? WHERE livro_id = ?",
+        [item.quantidade, item.livro_id]
+      );
+    }
+    // Deletar os itens do pedido
+    await conn.query("DELETE FROM pedidos_itens WHERE pedido_id = ?", [
+      pedidoId,
+    ]);
+
+    // Deletar o pedido
+    await conn.query("DELETE FROM pedidos WHERE id = ?", [pedidoId]);
+    await conn.commit();
+    res
+      .status(200)
+      .json({ message: `Pedido ${pedidoId} deletado com sucesso` });
+  } catch (err) {
+    await conn.rollback();
+    console.error("Erro ao deletar pedido:", err);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  } finally {
+    conn.release();
+  }
+}
+module.exports = { create, list, delete: deletePedido };

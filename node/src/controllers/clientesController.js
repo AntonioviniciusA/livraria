@@ -120,4 +120,28 @@ async function create(req, res) {
   }
 }
 
-module.exports = { list, create };
+async function deleteCliente(req, res) {
+  const { id } = req.params;
+  try {
+    const username = req.user.username;
+    const [result] = await db
+      .getPool()
+      .query("DELETE FROM clientes WHERE id = ?", [id]);
+    await addLog({
+      type: "Exclusão de cliente: " + id,
+      message: "Cliente excluído",
+      user: username,
+      data: {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+    });
+    console.log(result);
+    res.json({ message: "Cliente excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir cliente:", error);
+    throw new Error("Erro interno do servidor");
+  }
+}
+
+module.exports = { list, create, delete: deleteCliente };

@@ -8,16 +8,39 @@ import { CustomerForm } from "@/components/customers/customer-form"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { getUserProfile, getToken } from "@/api/auth" 
+import { getClientes, deleteCliente } from "@/api/clientes"
+
+
 
 export default function ClientesPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [showForm, setShowForm] = useState(false)
+    const [clientes, setClientes] = useState<any[]>([]);
 
   async function getProfile() {
     const profile = await getUserProfile();
     setUser(profile);
   }
+   async function fetchClientes() {
+    const response = await getClientes();
+    setClientes(response);
+  }
+
+  async function handleDeleteCliente(id: number) {
+   try {
+    const response = await deleteCliente(id);
+console.log("Cliente deletado:", response); 
+
+    fetchClientes();
+   } catch (error) {
+      console.error("Erro ao deletar cliente:", error);
+   }
+  }
+
+  useEffect(() => {
+    fetchClientes();
+  }, []);
 
 
 useEffect(() => {
@@ -47,11 +70,20 @@ getProfile();
         {showForm && (
                   <CustomerForm
                     onClose={() => setShowForm(false)}
-                    onAdd={() => setShowForm(false)}
+                    onAdd={() => {
+                      setShowForm(false);
+                      fetchClientes()
+                    }}
                   />
         )}
 
-        <CustomerList />
+        <CustomerList     clientes={clientes}
+          onUpdate={() => {}}
+          onDelete={ (id) => {
+            handleDeleteCliente(id);
+  setClientes(prev => prev.filter(b => b.id !== id));
+          }}
+  />
       </div>
     </DashboardLayout>
   )
