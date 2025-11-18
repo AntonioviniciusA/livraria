@@ -110,14 +110,14 @@ export function BookList({ books, onUpdate, onDelete }: BookListProps) {
                 </td>
                 <td className="py-4 px-6">
                   <div className="flex gap-2">
-                    <Button
+                    {/* <Button
                       size="sm"
                       variant="ghost"
                       className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
                       onClick={() => onUpdate(book)}
                     >
                       <Edit className="w-4 h-4" />
-                    </Button>
+                    </Button> */}
                     <Button
                       size="sm"
                       variant="ghost"
