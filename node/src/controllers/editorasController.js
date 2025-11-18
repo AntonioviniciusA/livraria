@@ -5,7 +5,7 @@ async function list(req, res) {
   try {
     // Tente diferentes nomes de coluna de data
     const possibleDateColumns = [
-      "created_at",
+      "criado_em",
       "data_criacao",
       "createdAt",
       "data_cadastro",
