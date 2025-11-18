@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { X } from "lucide-react"
-import { maskPhone, maskCPF, maskCEP } from "@/lib/input-masks" // Você precisará criar essas máscaras
-import { createCliente } from "@/api/clientes" // Assumindo que esta API existe
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { X } from "lucide-react";
+import { maskPhone, maskCPF, maskCEP } from "@/lib/input-masks"; // Você precisará criar essas máscaras
+import { createCliente } from "@/api/clientes"; // Assumindo que esta API existe
 interface CustomerFormProps {
-  onClose: () => void
-  onAdd: (customer: any) => void
+  onClose: () => void;
+  onAdd: (customer: any) => void;
 }
 
 export function CustomerForm({ onClose, onAdd }: CustomerFormProps) {
@@ -23,58 +23,60 @@ export function CustomerForm({ onClose, onAdd }: CustomerFormProps) {
     endereco: "",
     cidade: "",
     estado: "",
-    cep: ""
-  })
+    cep: "",
+  });
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    let { name, value } = e.target
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    let { name, value } = e.target;
 
     // Aplicar máscaras
     if (name === "telefone") {
-      value = maskPhone(value)
+      value = maskPhone(value);
     } else if (name === "cpf") {
-      value = maskCPF(value)
+      value = maskCPF(value);
     } else if (name === "cep") {
-      value = maskCEP(value) // Você precisará criar esta máscara também
+      value = maskCEP(value); // Você precisará criar esta máscara também
     }
 
-    setFormData({ ...formData, [name]: value })
-  }
+    setFormData({ ...formData, [name]: value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     try {
-      setLoading(true)
-      
+      setLoading(true);
+
       // Preparar dados para envio (remover formatação se necessário)
       const customerData = {
         ...formData,
         telefone: formData.telefone.replace(/\D/g, ""), // Remove caracteres não numéricos
         cpf: formData.cpf.replace(/\D/g, ""),
-        cep: formData.cep.replace(/\D/g, "")
-      }
+        cep: formData.cep.replace(/\D/g, ""),
+      };
 
-      const novoCliente = await createCliente(customerData)
-      onAdd(novoCliente)
-      onClose()
+      const novoCliente = await createCliente(customerData);
+      onAdd(novoCliente);
+      onClose();
     } catch (error) {
-      console.error("Erro ao criar cliente:", error)
-      alert("Erro ao criar cliente")
+      console.error("Erro ao criar cliente:", error);
+      alert("Erro ao criar cliente");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-white">Adicionar Novo Cliente</h2>
-        <Button 
-          size="icon" 
-          variant="ghost" 
-          onClick={onClose} 
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={onClose}
           className="text-slate-400 hover:text-white"
           disabled={loading}
         >
@@ -82,7 +84,10 @@ export function CustomerForm({ onClose, onAdd }: CustomerFormProps) {
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+      >
         <div className="md:col-span-2">
           <Input
             placeholder="Nome completo *"
@@ -169,8 +174,8 @@ export function CustomerForm({ onClose, onAdd }: CustomerFormProps) {
         />
 
         <div className="md:col-span-2 flex gap-2 pt-2">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="flex-1 bg-blue-600 hover:bg-blue-700"
             disabled={loading}
           >
@@ -188,5 +193,5 @@ export function CustomerForm({ onClose, onAdd }: CustomerFormProps) {
         </div>
       </form>
     </div>
-  )
+  );
 }

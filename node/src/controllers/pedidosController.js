@@ -143,6 +143,24 @@ async function list(req, res) {
   }
 }
 
+async function update(req, res) {
+  const { id } = req.params;
+
+  try {
+    const [result] = await db
+      .getPool()
+      .query("UPDATE pedidos SET coluna1 = ?, coluna2 = ? WHERE id = ?", [
+        valor1,
+        valor2,
+        id,
+      ]);
+
+    return res.json({ message: "Pedido atualizado", result });
+  } catch (error) {
+    return res.status(500).json({ error: "Erro ao atualizar pedido" });
+  }
+}
+
 async function deletePedido(req, res) {
   const pedidoId = req.params.id;
   const conn = await db.getPool().getConnection();

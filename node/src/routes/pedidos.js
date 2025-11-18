@@ -20,6 +20,13 @@ router.get(
   pedidosController.list
 );
 
+router.put(
+  "/:id",
+  authenticate,
+  authorize(["ADMIN", "ATENDIMENTO"]),
+  pedidosController.update
+);
+
 router.delete(
   "/:id",
   authenticate,

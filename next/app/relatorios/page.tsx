@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
-import { Eye, Download, Calendar, User, Globe } from "lucide-react"
+import {  Download, Calendar, User, Globe } from "lucide-react"
 import { getUserProfile, getToken } from "@/api/auth"
 import { getLogs } from "@/api/log" // Supondo que esta API já existe
 
@@ -166,14 +166,6 @@ function LogsList({ logs, onDownload, onViewDetails }: {
                 </td>
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-blue-400 hover:text-blue-300"
-                      onClick={() => onViewDetails(log)}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
                     <Button
                       size="sm"
                       variant="ghost"

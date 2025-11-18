@@ -1,44 +1,42 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { BookList } from "@/components/books/book-list"
-import { BookForm } from "@/components/books/book-form"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import { deleteLivro, getLivros } from "@/api/livros"
-import {  getUserProfile } from "@/api/auth"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { BookList } from "@/components/books/book-list";
+import { BookForm } from "@/components/books/book-form";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { deleteLivro, getLivros } from "@/api/livros";
+import { getUserProfile } from "@/api/auth";
 
 export default function LivrosPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [books, setBooks] = useState<any[]>([])
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [books, setBooks] = useState<any[]>([]);
 
+  async function fetchBooks() {
+    const responseLivros = await getLivros();
+    console.log("Livros fetched:", responseLivros);
+    setBooks(responseLivros);
+  }
+  async function getProfile() {
+    const profile = await getUserProfile();
+    setUser(profile);
+  }
+  async function handledeleteLivro(id: number) {
+    const resDelete = await deleteLivro(id);
+    console.log("Livro deleted:", resDelete);
+    fetchBooks();
+  }
 
-   async function fetchBooks() {
-      const responseLivros = await getLivros();
-      console.log("Livros fetched:", responseLivros);
-      setBooks(responseLivros)
-    }  
-    async function getProfile() {
-        const profile = await getUserProfile();
-        setUser(profile);
-      }
-      async function handledeleteLivro(id: number) {
-       const resDelete = await deleteLivro(id);
-       console.log("Livro deleted:", resDelete);
-        fetchBooks();
-      }
- 
   useEffect(() => {
     getProfile();
     fetchBooks();
-  }, [router])
+  }, [router]);
 
- if (user === null) return <div className="text-white">Carregando...</div>
-
+  if (user === null) return <div className="text-white">Carregando...</div>;
 
   return (
     <DashboardLayout currentUser={user}>
@@ -46,9 +44,14 @@ export default function LivrosPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white">Gerenciar Livros</h1>
-            <p className="text-slate-400 mt-2">Total de {books?.length} livros em estoque</p>
+            <p className="text-slate-400 mt-2">
+              Total de {books?.length} livros em estoque
+            </p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)} className="bg-blue-600 hover:bg-blue-700 gap-2">
+          <Button
+            onClick={() => setShowForm(!showForm)}
+            className="bg-blue-600 hover:bg-blue-700 gap-2"
+          >
             <Plus className="w-4 h-4" />
             Novo Livro
           </Button>
@@ -58,9 +61,9 @@ export default function LivrosPage() {
           <BookForm
             onClose={() => setShowForm(false)}
             onAdd={(book) => {
-              setBooks([...books, book])
-              setShowForm(false)
-              fetchBooks()
+              setBooks([...books, book]);
+              setShowForm(false);
+              fetchBooks();
             }}
           />
         )}
@@ -68,13 +71,12 @@ export default function LivrosPage() {
         <BookList
           books={books}
           onUpdate={() => {}}
-          onDelete={ (id) => {
+          onDelete={(id) => {
             handledeleteLivro(id);
-  setBooks(prev => prev.filter(b => b.id !== id));
-}}
-
+            setBooks((prev) => prev.filter((b) => b.id !== id));
+          }}
         />
       </div>
     </DashboardLayout>
-  )
+  );
 }

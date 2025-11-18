@@ -14,6 +14,13 @@ router.post(
   clientesController.create
 );
 
+router.put(
+  "/:id",
+  authenticate,
+  authorize(["ADMIN", "ATENDIMENTO"]),
+  clientesController.update
+);
+
 // Deletar cliente (ATENDIMENTO ou ADMIN)
 
 router.delete(

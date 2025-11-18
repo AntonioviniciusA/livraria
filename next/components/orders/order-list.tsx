@@ -2,17 +2,10 @@
 
 import { Button } from "@/components/ui/button"
 import { Trash, CheckCircle, Clock, XCircle } from "lucide-react"
-import { useState, useEffect } from "react"
-import { getPedidos } from "@/api/pedidos"
 
 export function OrderList(
   {orders, onDelete}: {orders: any[], onDelete: (id: number) => void}
 ) {
-
-
-
-
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Entregue":
