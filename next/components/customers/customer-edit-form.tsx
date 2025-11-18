@@ -33,6 +33,7 @@ export function CustomerEditForm({
   });
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (customer) {
@@ -63,12 +64,22 @@ export function CustomerEditForm({
     }
 
     setFormData({ ...formData, [name]: value });
+    setError(null); // Limpa erros ao digitar
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
+      console.log("Dados do formulário:", formData);
+      console.log("ID do cliente:", customer?.id);
+
+      // Validação básica
+      if (!customer?.id) {
+        throw new Error("ID do cliente não encontrado");
+      }
 
       const customerData = {
         ...formData,
@@ -77,12 +88,17 @@ export function CustomerEditForm({
         cep: formData.cep.replace(/\D/g, ""),
       };
 
+      console.log("Dados para enviar:", customerData);
+
       const clienteAtualizado = await updateCliente(customer.id, customerData);
+      
+      console.log("Resposta da API:", clienteAtualizado);
+      
       onUpdate(clienteAtualizado);
       onClose();
     } catch (error) {
       console.error("Erro ao atualizar cliente:", error);
-      alert("Erro ao atualizar cliente");
+      setError(error instanceof Error ? error.message : "Erro ao atualizar cliente");
     } finally {
       setLoading(false);
     }
@@ -103,6 +119,12 @@ export function CustomerEditForm({
             <X className="w-5 h-5" />
           </Button>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded text-red-300">
+            {error}
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmit}
@@ -140,6 +162,42 @@ export function CustomerEditForm({
             required
             disabled={loading}
           />
+
+          {/* <Input
+            placeholder="CPF"
+            value={formData.cpf}
+            onChange={handleChange}
+            name="cpf"
+            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+            disabled={loading}
+          />
+
+          <Input
+            placeholder="CEP"
+            value={formData.cep}
+            onChange={handleChange}
+            name="cep"
+            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+            disabled={loading}
+          />
+
+          <Input
+            placeholder="Cidade"
+            value={formData.cidade}
+            onChange={handleChange}
+            name="cidade"
+            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+            disabled={loading}
+          />
+
+          <Input
+            placeholder="Estado"
+            value={formData.estado}
+            onChange={handleChange}
+            name="estado"
+            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+            disabled={loading}
+          /> */}
 
           <div className="md:col-span-2">
             <Textarea

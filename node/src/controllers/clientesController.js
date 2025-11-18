@@ -120,8 +120,131 @@ async function create(req, res) {
   }
 }
 
-async function update(req) {}
+async function update(req, res) {
+  const { id } = req.params;
+  const { nome, email, telefone, cpf, endereco, cidade, estado, cep } =
+    req.body;
+  const username = req.user.username;
 
+  try {
+    // Validar se o ID foi fornecido
+    if (!id) {
+      return res.status(400).json({ error: "ID do cliente é obrigatório" });
+    }
+
+    // Validar campos obrigatórios
+    if (!nome || !email || !telefone) {
+      return res.status(400).json({
+        error: "Campos obrigatórios: nome, email e telefone",
+      });
+    }
+
+    // Verificar se o cliente existe
+    const [clienteExistente] = await db
+      .getPool()
+      .query("SELECT * FROM clientes WHERE id = ?", [id]);
+
+    if (clienteExistente.length === 0) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    // Verificar se o email já está em uso por outro cliente
+    const [emailExistente] = await db
+      .getPool()
+      .query("SELECT * FROM clientes WHERE email = ? AND id != ?", [email, id]);
+
+    if (emailExistente.length > 0) {
+      return res
+        .status(400)
+        .json({ error: "E-mail já está em uso por outro cliente" });
+    }
+
+    // Verificar se o CPF já está em uso por outro cliente (se CPF foi fornecido)
+    if (cpf) {
+      const [cpfExistente] = await db
+        .getPool()
+        .query("SELECT * FROM clientes WHERE cpf = ? AND id != ?", [cpf, id]);
+
+      if (cpfExistente.length > 0) {
+        return res
+          .status(400)
+          .json({ error: "CPF já está em uso por outro cliente" });
+      }
+    }
+
+    // Preparar dados para atualização
+    const dadosAtualizacao = {
+      nome,
+      email,
+      telefone,
+      cpf: cpf || null,
+      endereco: endereco || null,
+      cidade: cidade || null,
+      estado: estado || null,
+      cep: cep || null,
+      updated_at: new Date(),
+    };
+
+    // Atualizar o cliente no banco de dados
+    const [result] = await db
+      .getPool()
+      .query(
+        "UPDATE clientes SET nome = ?, email = ?, telefone = ?, cpf = ?, endereco = ?, atualizado_em = ? WHERE id = ?",
+        [
+          dadosAtualizacao.nome,
+          dadosAtualizacao.email,
+          dadosAtualizacao.telefone,
+          dadosAtualizacao.cpf,
+          dadosAtualizacao.endereco,
+          dadosAtualizacao.updated_at,
+          id,
+        ]
+      );
+
+    // Buscar o cliente atualizado
+    const [clienteAtualizado] = await db
+      .getPool()
+      .query("SELECT * FROM clientes WHERE id = ?", [id]);
+
+    if (clienteAtualizado.length === 0) {
+      return res.status(500).json({ error: "Erro ao atualizar cliente" });
+    }
+
+    // Adicionar log
+    await addLog({
+      type: "Atualização de cliente: " + nome,
+      message: "Cliente atualizado",
+      user: username,
+      data: {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+        clienteId: id,
+      },
+    });
+
+    // Retornar o cliente atualizado
+    return res.status(200).json({
+      message: "Cliente atualizado com sucesso",
+      cliente: clienteAtualizado[0],
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar cliente:", error);
+
+    // Verificar se é um erro de duplicidade do MySQL
+    if (error.code === "ER_DUP_ENTRY") {
+      if (error.sqlMessage.includes("email")) {
+        return res.status(400).json({ error: "E-mail já está em uso" });
+      } else if (error.sqlMessage.includes("cpf")) {
+        return res.status(400).json({ error: "CPF já está em uso" });
+      }
+      return res.status(400).json({ error: "Dados duplicados" });
+    }
+
+    return res.status(500).json({
+      error: "Erro interno do servidor ao atualizar cliente",
+    });
+  }
+}
 async function deleteCliente(req, res) {
   const { id } = req.params;
   try {
