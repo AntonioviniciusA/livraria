@@ -17,6 +17,7 @@ async function login(req, res) {
       .query("SELECT id, username, senha_hash FROM usuarios WHERE email = ?", [
         username,
       ]);
+    console.log(rows[0]);
     if (rows.length === 0)
       return res.status(401).json({ error: "Invalid credentials" });
     const user = rows[0];

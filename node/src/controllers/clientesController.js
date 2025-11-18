@@ -120,6 +120,8 @@ async function create(req, res) {
   }
 }
 
+async function update(req) {}
+
 async function deleteCliente(req, res) {
   const { id } = req.params;
   try {
@@ -144,4 +146,4 @@ async function deleteCliente(req, res) {
   }
 }
 
-module.exports = { list, create, delete: deleteCliente };
+module.exports = { list, create, update, delete: deleteCliente };

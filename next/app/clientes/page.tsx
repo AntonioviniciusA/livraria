@@ -34,7 +34,7 @@ export default function ClientesPage() {
   async function handleDeleteCliente(id: number) {
     try {
       await deleteCliente(id)
-      fetchClientes()
+     window.location.reload()
     } catch (error) {
       console.error("Erro ao deletar cliente:", error)
     }

@@ -90,27 +90,31 @@ async function create(req, res) {
 async function list(req, res) {
   try {
     const [rows] = await db.getPool().query(`
-      SELECT 
-        p.id,
-        p.numero_negocio,
-        p.cliente_id,
-        p.usuario_id,
-        p.total,
-        p.status,
-        p.criado_em,
-        c.nome as cliente_nome,
-        c.email as cliente_email,
-        u.username as usuario_username,
-        u.nome_completo as usuario_nome,
-        pi.*,
-        COUNT(pi.id) as total_itens,
-        SUM(pi.quantidade) as total_livros
-      FROM pedidos p
-      LEFT JOIN clientes c ON p.cliente_id = c.id
-      LEFT JOIN usuarios u ON p.usuario_id = u.id
-      LEFT JOIN pedidos_itens pi ON p.id = pi.pedido_id
-      GROUP BY p.id
-      ORDER BY p.criado_em DESC
+SELECT 
+  p.id,
+  p.numero_negocio,
+  p.cliente_id,
+  p.usuario_id,
+  p.total,
+  p.status,
+  p.criado_em,
+  c.nome as cliente_nome,
+  c.email as cliente_email,
+  u.username as usuario_username,
+  u.nome_completo as usuario_nome,
+  ANY_VALUE(pi.id) AS item_id,
+  ANY_VALUE(pi.livro_id) AS item_livro_id,
+  ANY_VALUE(pi.quantidade) AS item_quantidade,
+  ANY_VALUE(pi.preco_unitario) AS item_preco,
+  COUNT(pi.id) as total_itens,
+  SUM(pi.quantidade) as total_livros
+FROM pedidos p
+LEFT JOIN clientes c ON p.cliente_id = c.id
+LEFT JOIN usuarios u ON p.usuario_id = u.id
+LEFT JOIN pedidos_itens pi ON p.id = pi.pedido_id
+GROUP BY p.id
+ORDER BY p.criado_em DESC;
+
     `);
     console.log("Pedidos fetched:", rows);
     const pedidos = rows.map((pedido) => ({
@@ -204,4 +208,4 @@ async function deletePedido(req, res) {
     conn.release();
   }
 }
-module.exports = { create, list, delete: deletePedido };
+module.exports = { create, list, update, delete: deletePedido };
