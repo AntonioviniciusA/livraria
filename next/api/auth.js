@@ -50,3 +50,8 @@ export const getUserInfo = async () => {
 export const setUserInfo = (userInfo) => {
   localStorage.setItem("user", JSON.stringify(userInfo));
 };
+
+export const getUsers = async () => {
+  const response = await api.get("/usuarios/");
+  return response.data;
+};
