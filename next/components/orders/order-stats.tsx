@@ -20,9 +20,9 @@ export function OrderStats() {
     const response = await getPedidos()
     setTotalPedidos(response.length)
 
-    const entregues = response.filter((pedido: any) => pedido.status === "ENVIADO").length
-    const processando = response.filter((pedido: any) => pedido.status === "CANCELADO").length
-    const pendentes = response.filter((pedido: any) => pedido.status === "ABERTO").length
+    const entregues = response.filter((pedido: any) => pedido.status === "ENTREGUE").length
+    const processando = response.filter((pedido: any) => pedido.status === "PROCESSANDO").length
+    const pendentes = response.filter((pedido: any) => pedido.status === "PENDENTE").length
 
     setPedidosEntregues(entregues)
     setPedidosProcessando(processando)

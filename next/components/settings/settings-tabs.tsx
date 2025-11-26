@@ -4,10 +4,10 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useSystemName } from "@/hooks/use-system-name"
-import { getUserProfile } from "@/api/auth"
+import { getUserProfile, getUsers } from "@/api/auth" // Adicione getUsers se existir
 
 export function SettingsTabs() {
-  const [activeTab, setActiveTab] = useState<"empresa" | "sistema" | "usuarios">("empresa")
+  const [activeTab, setActiveTab] = useState<"empresa" | "usuarios">("empresa")
   const { systemName, updateSystemName } = useSystemName()
   const [localSystemName, setLocalSystemName] = useState(systemName)
 
@@ -17,7 +17,7 @@ export function SettingsTabs() {
 
   const tabs = [
     { id: "empresa", label: "Dados da Empresa", icon: "🏢" },
-    { id: "sistema", label: "Sistema", icon: "⚙️" },
+    // { id: "sistema", label: "Sistema", icon: "⚙️" },
     { id: "usuarios", label: "Usuários", icon: "👥" },
   ]
 
@@ -44,13 +44,27 @@ export function SettingsTabs() {
           onSave={() => updateSystemName(localSystemName)}
         />
       )}
-      {activeTab === "sistema" && <SystemSettings />}
+      {/* {activeTab === "sistema" && <SystemSettings />} */}
       {activeTab === "usuarios" && <UsersSettings />}
     </div>
   )
 }
 
 function CompanySettings({ systemName, onSystemNameChange, onSave }: any) {
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await onSave()
+      // Adicione feedback de sucesso se necessário
+    } catch (error) {
+      console.error("Erro ao salvar:", error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 space-y-6">
       <h3 className="text-lg font-semibold text-white">Informações da Empresa</h3>
@@ -62,17 +76,26 @@ function CompanySettings({ systemName, onSystemNameChange, onSave }: any) {
             value={systemName}
             onChange={(e) => onSystemNameChange(e.target.value)}
             className="mt-2 bg-slate-700 border-slate-600 text-white"
+            placeholder="Digite o nome do sistema"
           />
         </div>
 
         <div>
           <label className="text-sm font-medium text-white">Nome da Empresa</label>
-          <Input defaultValue="FACA Bookstore" className="mt-2 bg-slate-700 border-slate-600 text-white" />
+          <Input 
+            defaultValue="FACA Bookstore" 
+            className="mt-2 bg-slate-700 border-slate-600 text-white" 
+            placeholder="Digite o nome da empresa"
+          />
         </div>
 
         <div>
           <label className="text-sm font-medium text-white">CNPJ</label>
-          <Input defaultValue="12.345.678/0001-90" className="mt-2 bg-slate-700 border-slate-600 text-white" />
+          <Input 
+            defaultValue="12.345.678/0001-90" 
+            className="mt-2 bg-slate-700 border-slate-600 text-white" 
+            placeholder="Digite o CNPJ"
+          />
         </div>
 
         <div>
@@ -81,16 +104,25 @@ function CompanySettings({ systemName, onSystemNameChange, onSave }: any) {
             type="email"
             defaultValue="contato@faca-bookstore.com.br"
             className="mt-2 bg-slate-700 border-slate-600 text-white"
+            placeholder="Digite o email"
           />
         </div>
 
         <div>
           <label className="text-sm font-medium text-white">Telefone</label>
-          <Input defaultValue="(11) 3000-0000" className="mt-2 bg-slate-700 border-slate-600 text-white" />
+          <Input 
+            defaultValue="(11) 3000-0000" 
+            className="mt-2 bg-slate-700 border-slate-600 text-white" 
+            placeholder="Digite o telefone"
+          />
         </div>
 
-        <Button onClick={onSave} className="bg-blue-600 hover:bg-blue-700">
-          Salvar Alterações
+        <Button 
+          onClick={handleSave} 
+          className="bg-blue-600 hover:bg-blue-700"
+          disabled={saving}
+        >
+          {saving ? "Salvando..." : "Salvar Alterações"}
         </Button>
       </div>
     </div>
@@ -99,10 +131,23 @@ function CompanySettings({ systemName, onSystemNameChange, onSave }: any) {
 
 function SystemSettings() {
   const [darkMode, setDarkMode] = useState(true)
+  const [emailNotifications, setEmailNotifications] = useState(true)
+  const [autoBackup, setAutoBackup] = useState(true)
 
   useEffect(() => {
     const saved = localStorage.getItem("theme")
     setDarkMode(saved === "dark")
+    
+    // Carregar outras configurações do localStorage se existirem
+    const savedEmailNotifications = localStorage.getItem("emailNotifications")
+    if (savedEmailNotifications) {
+      setEmailNotifications(JSON.parse(savedEmailNotifications))
+    }
+    
+    const savedAutoBackup = localStorage.getItem("autoBackup")
+    if (savedAutoBackup) {
+      setAutoBackup(JSON.parse(savedAutoBackup))
+    }
   }, [])
 
   const handleDarkModeChange = () => {
@@ -111,6 +156,12 @@ function SystemSettings() {
     const theme = newMode ? "dark" : "light"
     localStorage.setItem("theme", theme)
     document.documentElement.classList.toggle("dark", newMode)
+  }
+
+  const handleSaveSettings = () => {
+    localStorage.setItem("emailNotifications", JSON.stringify(emailNotifications))
+    localStorage.setItem("autoBackup", JSON.stringify(autoBackup))
+    // Adicione feedback de sucesso
   }
 
   return (
@@ -136,7 +187,12 @@ function SystemSettings() {
             <p className="text-white font-medium">Notificações por Email</p>
             <p className="text-slate-400 text-sm">Receber alertas de pedidos</p>
           </div>
-          <input type="checkbox" className="w-5 h-5" defaultChecked />
+          <input 
+            type="checkbox" 
+            className="w-5 h-5 cursor-pointer" 
+            checked={emailNotifications}
+            onChange={() => setEmailNotifications(!emailNotifications)}
+          />
         </div>
 
         <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
@@ -144,25 +200,69 @@ function SystemSettings() {
             <p className="text-white font-medium">Backup Automático</p>
             <p className="text-slate-400 text-sm">Fazer backup diariamente</p>
           </div>
-          <input type="checkbox" className="w-5 h-5" defaultChecked />
+          <input 
+            type="checkbox" 
+            className="w-5 h-5 cursor-pointer" 
+            checked={autoBackup}
+            onChange={() => setAutoBackup(!autoBackup)}
+          />
         </div>
 
-        <Button className="bg-blue-600 hover:bg-blue-700">Salvar Configurações</Button>
+        <Button 
+          onClick={handleSaveSettings} 
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          Salvar Configurações
+        </Button>
       </div>
     </div>
   )
 }
 
 function UsersSettings() {
- const [users, setUsers] = useState<any[]>([])
-const fetchUsers = async () => {
-  const response = await getUserProfile();
-  setUsers(response);
-}
+  const [users, setUsers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-useEffect(() => {
-  fetchUsers();
-}, []);
+  const fetchUsers = async () => {
+    try {
+      setLoading(true)
+      // Se você tiver uma função getUsers na API, use-a:
+      // const response = await getUsers();
+      // Caso contrário, vamos simular dados temporários:
+      const currentUser = await getUserProfile()
+      setUsers([
+        {
+          id: 1,
+          name: currentUser.name || "Administrador",
+          email: currentUser.email || "admin@email.com",
+          role: "Administrador"
+        },
+        {
+          id: 2,
+          name: "Usuário Teste",
+          email: "usuario@email.com",
+          role: "Vendedor"
+        }
+      ])
+    } catch (error) {
+      console.error("Erro ao carregar usuários:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+        <div className="text-white">Carregando usuários...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 space-y-6">
       <div className="flex items-center justify-between mb-4">
@@ -187,8 +287,11 @@ useEffect(() => {
                 <td className="py-3 px-4 text-slate-300">{user.email}</td>
                 <td className="py-3 px-4 text-slate-300">{user.role}</td>
                 <td className="py-3 px-4">
-                  <Button size="sm" variant="ghost" className="text-blue-400">
+                  <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300">
                     Editar
+                  </Button>
+                  <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 ml-2">
+                    Excluir
                   </Button>
                 </td>
               </tr>

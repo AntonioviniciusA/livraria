@@ -1,12 +1,33 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const clientesController = require('../controllers/clientesController');
-const { authenticate, authorize } = require('../middleware/auth');
+const clientesController = require("../controllers/clientesController");
+const { authenticate, authorize } = require("../middleware/auth");
 
 // Listar clientes (autenticado)
-router.get('/', authenticate, clientesController.list);
+router.get("/", authenticate, clientesController.list);
 
 // Criar cliente (ATENDIMENTO ou ADMIN)
-router.post('/', authenticate, authorize(['ADMIN','ATENDIMENTO']), clientesController.create);
+router.post(
+  "/",
+  authenticate,
+  authorize(["ADMIN", "ATENDIMENTO"]),
+  clientesController.create
+);
+
+router.put(
+  "/:id",
+  authenticate,
+  authorize(["ADMIN", "ATENDIMENTO"]),
+  clientesController.update
+);
+
+// Deletar cliente (ATENDIMENTO ou ADMIN)
+
+router.delete(
+  "/:id",
+  authenticate,
+  authorize(["ADMIN", "ATENDIMENTO"]),
+  clientesController.delete
+);
 
 module.exports = router;

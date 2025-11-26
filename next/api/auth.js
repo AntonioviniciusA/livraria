@@ -40,10 +40,18 @@ export const setToken = (token) => {
 export const clearToken = () => {
   localStorage.removeItem("token");
 };
-export const getUserInfo = () => {
+export const getUserInfo = async () => {
   const userInfo = localStorage.getItem("user");
+  if (!userInfo) {
+    return await getUserProfile();
+  }
   return userInfo ? JSON.parse(userInfo) : null;
 };
 export const setUserInfo = (userInfo) => {
   localStorage.setItem("user", JSON.stringify(userInfo));
+};
+
+export const getUsers = async () => {
+  const response = await api.get("/usuarios/");
+  return response.data;
 };

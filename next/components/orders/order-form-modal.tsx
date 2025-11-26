@@ -52,7 +52,6 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
   const [loading, setLoading] = useState(false)
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
 
-  // Carregar clientes e livros quando o modal abrir
   useEffect(() => {
     if (isOpen) {
       const fetchData = async () => {
@@ -151,7 +150,7 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
       if (item.preco_unitario && item.quantidade) {
         const preco = Number.parseFloat(item.preco_unitario.replace(/\./g, ",").replace(/,/g, "."))
         const quantidade = Number.parseInt(item.quantidade)
-        return( total + (preco * quantidade) )
+        return total + (preco * quantidade)
       }
       return total
     }, 0)
@@ -162,13 +161,11 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
     try {
       setLoading(true)
       
-      // Preparar dados no formato esperado pelo backend
       const pedidoData = {
         cliente_id: Number.parseInt(formData.cliente_id),
         itens: formData.itens.map(item => ({
           livro_id: Number.parseInt(item.livro_id),
           quantidade: Number.parseInt(item.quantidade),
-          // O preço unitário será buscado no backend, mas enviamos por segurança
           preco_unitario: Number.parseFloat(item.preco_unitario.replace(/\./g, "").replace(/,/g, "."))
         }))
       }
@@ -177,7 +174,6 @@ export function OrderFormModal({ isOpen, onClose, onAdd }: OrderFormModalProps) 
       const novoPedido = await createPedido(pedidoData)
       onAdd(novoPedido)
       
-      // Reset form
       setFormData({
         cliente_id: "",
         itens: [{ livro_id: "", quantidade: "1", preco_unitario: "" }],

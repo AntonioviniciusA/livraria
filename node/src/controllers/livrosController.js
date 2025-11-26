@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const { addLog } = require("../services/logService");
 
 async function list(req, res) {
   try {
@@ -50,36 +51,6 @@ async function list(req, res) {
       },
       quantidade: row.quantidade
     }));
-
-    // Fazer cache dos livros no MongoDB de forma assíncrona
-    try {
-      const { CacheService } = await import('../services/cacheService.js');
-      for (const livro of livros) {
-        await CacheService.cacheBook(livro);
-      }
-      console.log(`✅ ${livros.length} livros cacheados no MongoDB`);
-    } catch (cacheError) {
-      console.error('Erro no cache:', cacheError);
-    }
-
-    // Registrar consulta de livros no MongoDB
-    try {
-      const { AuditService } = await import('../services/auditService.js');
-      await AuditService.logAction(
-        'livros',
-        'LIST',
-        'READ',
-        null,
-        {
-          total_livros: livros.length,
-          userId: req.user.id
-        },
-        req.user.id,
-        req.ip
-      );
-    } catch (auditError) {
-      console.error('Erro ao registrar consulta de livros:', auditError);
-    }
 
     res.json(livros);
   } catch (err) {
@@ -173,7 +144,7 @@ async function create(req, res) {
     editora_id,
     categoria_id,
   } = req.body;
-
+  const username = req.user.username;
   const conn = await db.getPool().getConnection();
   try {
     await conn.beginTransaction();
@@ -211,38 +182,15 @@ async function create(req, res) {
 
     await conn.commit();
 
-    // Registrar sucesso da criação no MongoDB
-    await AuditService.logAction(
-      'livros',
-      livroId.toString(),
-      'CREATE_SUCCESS',
-      null,
-      {
-        livro_id: livroId,
-        titulo,
-        isbn,
-        preco,
-        quantidade,
-        userId: req.user.id
+    await addLog({
+      type: "Registro de livro: " + titulo,
+      message: "Livro registrado",
+      user: username,
+      data: {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
       },
-      req.user.id,
-      req.ip
-    );
-
-    // Atualizar cache no MongoDB
-    try {
-      const { CacheService } = await import('../services/cacheService.js');
-      await CacheService.cacheBook({
-        id: livroId,
-        titulo,
-        isbn,
-        preco,
-        quantidade
-      });
-    } catch (cacheError) {
-      console.error('Erro ao atualizar cache:', cacheError);
-    }
-
+    });
     res.status(201).json({ id: livroId });
   } catch (err) {
     await conn.rollback();
@@ -367,27 +315,15 @@ async function deleteBook(req, res) {
     if (result.affectedRows === 0)
       return res.status(404).json({ error: "Not found" });
 
-    // Registrar exclusão no MongoDB
-    try {
-      const { AuditService } = await import('../services/auditService.js');
-      await AuditService.logAction(
-        'livros',
-        req.params.id,
-        'DELETE',
-        oldRows[0] || {},
-        null,
-        req.user.id,
-        req.ip
-      );
-
-      // Remover do cache
-      const { CacheService } = await import('../services/cacheService.js');
-      // Nota: Em produção, usaríamos deleteOne, mas nossa implementação atual não tem este método
-      console.log('Livro removido, cache será atualizado na próxima consulta');
-    } catch (mongoError) {
-      console.error('Erro no MongoDB:', mongoError);
-    }
-
+    await addLog({
+      type: "Apagando de livro, id: " + req.params.id,
+      message: "Livro apagado",
+      user: username,
+      data: {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+    });
     res.json({ message: "Deleted successfully" });
   } catch (err) {
     console.error(err);

@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const db = require("./config/db");
+const dbMongo = require("./config/dbMongo");
 const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/auth");
@@ -14,10 +15,7 @@ const editorasRoutes = require("./routes/editoras");
 const clientesRoutes = require("./routes/clientes");
 const pedidosRoutes = require("./routes/pedidos");
 const categoriasRoutes = require("./routes/categorias");
-
-// Novas rotas MongoDB
-const auditRoutes = require("./routes/audit");
-const cacheRoutes = require("./routes/cache");
+const logsRoutes = require("./routes/log");
 
 const app = express();
 
@@ -108,6 +106,7 @@ app.use("/editoras", editorasRoutes);
 app.use("/clientes", clientesRoutes);
 app.use("/pedidos", pedidosRoutes);
 app.use("/categorias", categoriasRoutes);
+app.use("/logs", logsRoutes);
 
 // Novas rotas
 app.use("/audit", auditRoutes);
@@ -124,8 +123,10 @@ console.log('Porta:', PORT);
 (async () => {
   try {
     await db.init();
-    console.log('📊 Bancos de dados inicializados: MySQL + MongoDB');
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    await db.testConnection();
+    await dbMongo.init();
+    await dbMongo.testConnection();
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   } catch (err) {
     console.error("Failed to start server:", err);
     process.exit(1);

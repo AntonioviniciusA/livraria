@@ -1,40 +1,44 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react"
-import { getUserProfile, getToken } from "@/api/auth"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { getUserProfile, getToken } from "@/api/auth";
 
-
-export default function CustomerDetailPage({ params }: { params: { id: string } }) {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+export default function CustomerDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
 
   async function getProfile() {
     const profile = await getUserProfile();
-   
+
     setUser(profile);
-    
   }
 
-
-useEffect(() => {
-  const token = getToken();
-  if (!token) {
-    router.push("/");
-  }
-getProfile();
-}, []);
- if (user === null) return <div className="text-white">Carregando...</div>
-
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      router.push("/");
+    }
+    getProfile();
+  }, []);
+  if (user === null) return <div className="text-white">Carregando...</div>;
 
   return (
     <DashboardLayout currentUser={user}>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.push("/clientes")} className="text-slate-400">
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/clientes")}
+            className="text-slate-400"
+          >
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h1 className="text-3xl font-bold text-white">João Silva</h1>
@@ -42,7 +46,9 @@ getProfile();
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Informações Pessoais</h2>
+            <h2 className="text-lg font-semibold text-white mb-4">
+              Informações Pessoais
+            </h2>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-slate-400" />
@@ -70,7 +76,9 @@ getProfile();
 
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Estatísticas</h2>
+              <h2 className="text-lg font-semibold text-white mb-4">
+                Estatísticas
+              </h2>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-slate-400 text-sm">Total Gasto</p>
@@ -88,7 +96,9 @@ getProfile();
             </div>
 
             <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Últimos Pedidos</h2>
+              <h2 className="text-lg font-semibold text-white mb-4">
+                Últimos Pedidos
+              </h2>
               <div className="space-y-3">
                 <div className="flex justify-between p-3 bg-slate-700/50 rounded-lg">
                   <span className="text-white">#001</span>
@@ -104,5 +114,5 @@ getProfile();
         </div>
       </div>
     </DashboardLayout>
-  )
+  );
 }

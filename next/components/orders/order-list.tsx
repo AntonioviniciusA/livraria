@@ -1,30 +1,11 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Eye, CheckCircle, Clock, XCircle } from "lucide-react"
-import { useState, useEffect } from "react"
-import { getPedidos } from "@/api/pedidos"
+import { Trash, CheckCircle, Clock, XCircle } from "lucide-react"
 
-export function OrderList() {
-
-const fetchOrders = async () => {
-
-  const response = await getPedidos();
-  console.log("Fetched orders in OrderList:", response);
-  return response;
-}
-
-const [orders, setOrders] = useState<any[]>([]);
-
-useEffect(() => {
-  fetchOrders().then((data) => {
-    setOrders(data);
-    console.log("Orders fetched:", data);
-  });
-}, []);
-
-
-
+export function OrderList(
+  {orders, onDelete}: {orders: any[], onDelete: (id: number) => void}
+) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Entregue":
@@ -82,8 +63,8 @@ useEffect(() => {
                   </div>
                 </td>
                 <td className="py-4 px-6">
-                  <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300">
-                    <Eye className="w-4 h-4" />
+                  <Button onClick={() => onDelete(order.id)} size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300">
+                    <Trash className="w-4 h-4" />
                   </Button>
                 </td>
               </tr>

@@ -17,7 +17,8 @@ export function DashboardLayout({ children, currentUser }: DashboardLayoutProps)
   const router = useRouter()
 
   const handleLogout = () => {
-    localStorage.removeItem("user")
+    localStorage.removeItem("token")
+     localStorage.removeItem("user")
     router.push("/")
   }
 

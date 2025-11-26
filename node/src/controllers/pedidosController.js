@@ -159,27 +159,31 @@ async function create(req, res) {
 async function list(req, res) {
   try {
     const [rows] = await db.getPool().query(`
-      SELECT 
-        p.id,
-        p.numero_negocio,
-        p.cliente_id,
-        p.usuario_id,
-        p.total,
-        p.status,
-        p.criado_em,
-        c.nome as cliente_nome,
-        c.email as cliente_email,
-        u.username as usuario_username,
-        u.nome_completo as usuario_nome,
-        pi.*,
-        COUNT(pi.id) as total_itens,
-        SUM(pi.quantidade) as total_livros
-      FROM pedidos p
-      LEFT JOIN clientes c ON p.cliente_id = c.id
-      LEFT JOIN usuarios u ON p.usuario_id = u.id
-      LEFT JOIN pedidos_itens pi ON p.id = pi.pedido_id
-      GROUP BY p.id
-      ORDER BY p.criado_em DESC
+SELECT 
+  p.id,
+  p.numero_negocio,
+  p.cliente_id,
+  p.usuario_id,
+  p.total,
+  p.status,
+  p.criado_em,
+  c.nome as cliente_nome,
+  c.email as cliente_email,
+  u.username as usuario_username,
+  u.nome_completo as usuario_nome,
+  ANY_VALUE(pi.id) AS item_id,
+  ANY_VALUE(pi.livro_id) AS item_livro_id,
+  ANY_VALUE(pi.quantidade) AS item_quantidade,
+  ANY_VALUE(pi.preco_unitario) AS item_preco,
+  COUNT(pi.id) as total_itens,
+  SUM(pi.quantidade) as total_livros
+FROM pedidos p
+LEFT JOIN clientes c ON p.cliente_id = c.id
+LEFT JOIN usuarios u ON p.usuario_id = u.id
+LEFT JOIN pedidos_itens pi ON p.id = pi.pedido_id
+GROUP BY p.id
+ORDER BY p.criado_em DESC;
+
     `);
     console.log("Pedidos fetched:", rows);
     const pedidos = rows.map((pedido) => ({
@@ -232,49 +236,65 @@ async function list(req, res) {
   }
 }
 
-// Nova função para estatísticas de pedidos usando MongoDB
-async function getStats(req, res) {
+async function update(req, res) {
+  const { id } = req.params;
+
   try {
-    const { CacheService } = await import('../services/cacheService.js');
-    
-    // Buscar livros mais vendidos do cache MongoDB
-    const topBooks = await CacheService.getTopSellingBooks(10);
-    
-    // Buscar estatísticas do MySQL
-    const [stats] = await db.getPool().query(`
-      SELECT 
-        COUNT(*) as total_pedidos,
-        SUM(total) as receita_total,
-        AVG(total) as ticket_medio,
-        COUNT(DISTINCT cliente_id) as clientes_ativos,
-        DATE(criado_em) as data,
-        SUM(total) as receita_diaria
-      FROM pedidos 
-      WHERE criado_em >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-      GROUP BY DATE(criado_em)
-      ORDER BY data DESC
-      LIMIT 30
-    `);
+    const [result] = await db
+      .getPool()
+      .query("UPDATE pedidos SET coluna1 = ?, coluna2 = ? WHERE id = ?", [
+        valor1,
+        valor2,
+        id,
+      ]);
 
-    const estatisticas = {
-      livros_mais_vendidos: topBooks,
-      resumo: {
-        total_pedidos: stats[0]?.total_pedidos || 0,
-        receita_total: parseFloat(stats[0]?.receita_total || 0),
-        ticket_medio: parseFloat(stats[0]?.ticket_medio || 0),
-        clientes_ativos: stats[0]?.clientes_ativos || 0
-      },
-      historico_30_dias: stats.map(row => ({
-        data: row.data,
-        receita_diaria: parseFloat(row.receita_diaria || 0)
-      }))
-    };
-
-    res.json(estatisticas);
-  } catch (err) {
-    console.error("Erro ao buscar estatísticas:", err);
-    res.status(500).json({ error: "Erro interno do servidor" });
+    return res.json({ message: "Pedido atualizado", result });
+  } catch (error) {
+    return res.status(500).json({ error: "Erro ao atualizar pedido" });
   }
 }
 
-module.exports = { create, list, getStats };
+async function deletePedido(req, res) {
+  const pedidoId = req.params.id;
+  const conn = await db.getPool().getConnection();
+  try {
+    await conn.beginTransaction();
+    // Verificar se o pedido existe
+    const [pedidoRows] = await conn.query(
+      "SELECT * FROM pedidos WHERE id = ? FOR UPDATE",
+      [pedidoId]
+    );
+    if (pedidoRows.length === 0) {
+      throw new Error(`Pedido ${pedidoId} não encontrado`);
+    }
+    // Restaurar o estoque dos itens do pedido
+    const [itensRows] = await conn.query(
+      "SELECT livro_id, quantidade FROM pedidos_itens WHERE pedido_id = ?",
+      [pedidoId]
+    );
+    for (const item of itensRows) {
+      await conn.query(
+        "UPDATE estoque SET quantidade = quantidade + ? WHERE livro_id = ?",
+        [item.quantidade, item.livro_id]
+      );
+    }
+    // Deletar os itens do pedido
+    await conn.query("DELETE FROM pedidos_itens WHERE pedido_id = ?", [
+      pedidoId,
+    ]);
+
+    // Deletar o pedido
+    await conn.query("DELETE FROM pedidos WHERE id = ?", [pedidoId]);
+    await conn.commit();
+    res
+      .status(200)
+      .json({ message: `Pedido ${pedidoId} deletado com sucesso` });
+  } catch (err) {
+    await conn.rollback();
+    console.error("Erro ao deletar pedido:", err);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  } finally {
+    conn.release();
+  }
+}
+module.exports = { create, list, update, delete: deletePedido };

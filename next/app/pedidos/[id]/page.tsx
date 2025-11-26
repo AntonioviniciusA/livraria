@@ -1,32 +1,39 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+export default function OrderDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
+    const userData = localStorage.getItem("user");
     if (!userData) {
-      router.push("/")
+      router.push("/");
     } else {
-      setUser(JSON.parse(userData))
+      setUser(JSON.parse(userData));
     }
-  }, [router])
+  }, [router]);
 
- if (user === null) return <div className="text-white">Carregando...</div>
-
+  if (user === null) return <div className="text-white">Carregando...</div>;
 
   return (
     <DashboardLayout currentUser={user}>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.push("/pedidos")} className="text-slate-400 hover:text-white">
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/pedidos")}
+            className="text-slate-400 hover:text-white"
+          >
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h1 className="text-3xl font-bold text-white">Pedido #{params.id}</h1>
@@ -35,7 +42,9 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Itens do Pedido</h2>
+              <h2 className="text-lg font-semibold text-white mb-4">
+                Itens do Pedido
+              </h2>
               <div className="space-y-3">
                 <div className="flex justify-between p-4 bg-slate-700/50 rounded-lg">
                   <div>
@@ -55,9 +64,13 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             </div>
 
             <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Endereço de Entrega</h2>
+              <h2 className="text-lg font-semibold text-white mb-4">
+                Endereço de Entrega
+              </h2>
               <p className="text-slate-300">João Silva</p>
-              <p className="text-slate-400 text-sm mt-2">Rua Exemplo, 123 - São Paulo, SP</p>
+              <p className="text-slate-400 text-sm mt-2">
+                Rua Exemplo, 123 - São Paulo, SP
+              </p>
             </div>
           </div>
 
@@ -105,5 +118,5 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
         </div>
       </div>
     </DashboardLayout>
-  )
+  );
 }
