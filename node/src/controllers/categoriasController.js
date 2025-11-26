@@ -104,6 +104,15 @@ async function getById(req, res) {
       return res.status(404).json({ error: "Categoria não encontrada" });
     }
 
+    // Buscar metadados no MongoDB
+    const mongoClient = mongoDb.getMongoClient();
+    const dbMongo = mongoClient.db('livraria');
+    const categoriasCollection = dbMongo.collection('categorias_metadados');
+    
+    const metadados = await categoriasCollection.findOne({ 
+      categoria_id: parseInt(id) 
+    });
+
     const categoria = {
       ...rows[0],
       total_livros: parseInt(rows[0].total_livros),
@@ -123,6 +132,8 @@ async function create(req, res) {
     return res.status(400).json({ error: "O campo 'nome' é obrigatório" });
   }
 
+  const connection = await db.getPool().getConnection();
+  
   try {
     const [result] = await db
       .getPool()
@@ -149,6 +160,7 @@ async function create(req, res) {
 
     res.status(201).json(categoria[0]);
   } catch (err) {
+    await connection.rollback();
     console.error("Erro ao criar categoria:", err);
 
     if (err.code === "ER_DUP_ENTRY") {
@@ -156,19 +168,24 @@ async function create(req, res) {
     } else {
       res.status(500).json({ error: "Erro ao criar categoria" });
     }
+  } finally {
+    connection.release();
   }
 }
 
 async function update(req, res) {
   const { id } = req.params;
-  const { nome, descricao } = req.body;
+  const { nome, descricao, metadados } = req.body;
 
+  const connection = await db.getPool().getConnection();
+  
   try {
     const [exists] = await db
       .getPool()
       .query("SELECT id FROM categorias WHERE id = ?", [id]);
 
     if (exists.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: "Categoria não encontrada" });
     }
 
@@ -190,8 +207,29 @@ async function update(req, res) {
       },
     });
 
+    // Atualizar metadados no MongoDB
+    const mongoClient = mongoDb.getMongoClient();
+    const dbMongo = mongoClient.db('livraria');
+    const categoriasCollection = dbMongo.collection('categorias_metadados');
+    
+    if (metadados) {
+      await categoriasCollection.updateOne(
+        { categoria_id: parseInt(id) },
+        { 
+          $set: {
+            ...metadados,
+            data_atualizacao: new Date()
+          }
+        },
+        { upsert: true }
+      );
+    }
+
+    await connection.commit();
+
     res.json({ message: "Categoria atualizada com sucesso" });
   } catch (err) {
+    await connection.rollback();
     console.error("Erro ao atualizar categoria:", err);
 
     if (err.code === "ER_DUP_ENTRY") {
@@ -199,18 +237,23 @@ async function update(req, res) {
     } else {
       res.status(500).json({ error: "Erro ao atualizar categoria" });
     }
+  } finally {
+    connection.release();
   }
 }
 
 async function remove(req, res) {
   const { id } = req.params;
 
+  const connection = await db.getPool().getConnection();
+  
   try {
     const [exists] = await db
       .getPool()
       .query("SELECT id FROM categorias WHERE id = ?", [id]);
 
     if (exists.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: "Categoria não encontrada" });
     }
 
@@ -319,74 +362,22 @@ try {
 async function create(req, res) {
   const { nome, descricao } = req.body;
 
-  if (!nome) {
-    return res.status(400).json({ error: "O campo 'nome' é obrigatório" });
-  }
+    // Excluir metadados do MongoDB
+    const mongoClient = mongoDb.getMongoClient();
+    const dbMongo = mongoClient.db('livraria');
+    const categoriasCollection = dbMongo.collection('categorias_metadados');
+    
+    await categoriasCollection.deleteOne({ categoria_id: parseInt(id) });
 
-  try {
-    const [result] = await db
-      .getPool()
-      .query("INSERT INTO categorias (nome, descricao) VALUES (?, ?)", [
-        nome,
-        descricao || null,
-      ]);
-
-    res.status(201).json({
-      message: "Categoria criada com sucesso",
-      categoriaId: result.insertId,
-    });
-  } catch (err) {
-    console.error("Erro ao criar categoria:", err);
-    res.status(500).json({ error: "Erro ao criar categoria" });
-  }
-}
-
-// ATUALIZAR CATEGORIA
-async function update(req, res) {
-  const { id } = req.params;
-  const { nome, descricao } = req.body;
-
-  try {
-    const [exists] = await db
-      .getPool()
-      .query("SELECT id FROM categorias WHERE id = ?", [id]);
-    if (exists.length === 0) {
-      return res.status(404).json({ error: "Categoria não encontrada" });
-    }
-
-    await db
-      .getPool()
-      .query("UPDATE categorias SET nome = ?, descricao = ? WHERE id = ?", [
-        nome,
-        descricao || null,
-        id,
-      ]);
-
-    res.json({ message: "Categoria atualizada com sucesso" });
-  } catch (err) {
-    console.error("Erro ao atualizar categoria:", err);
-    res.status(500).json({ error: "Erro ao atualizar categoria" });
-  }
-}
-
-// EXCLUIR CATEGORIA
-async function remove(req, res) {
-  const { id } = req.params;
-
-  try {
-    const [exists] = await db
-      .getPool()
-      .query("SELECT id FROM categorias WHERE id = ?", [id]);
-    if (exists.length === 0) {
-      return res.status(404).json({ error: "Categoria não encontrada" });
-    }
-
-    await db.getPool().query("DELETE FROM categorias WHERE id = ?", [id]);
+    await connection.commit();
 
     res.json({ message: "Categoria removida com sucesso" });
   } catch (err) {
+    await connection.rollback();
     console.error("Erro ao remover categoria:", err);
     res.status(500).json({ error: "Erro ao remover categoria" });
+  } finally {
+    connection.release();
   }
 }
 

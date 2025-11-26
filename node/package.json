@@ -1,8 +1,9 @@
 {
   "name": "livraria-backend",
   "version": "1.0.0",
-  "description": "Backend para livraria (MySQL)",
+  "description": "Backend para livraria (MySQL + MongoDB)",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js"

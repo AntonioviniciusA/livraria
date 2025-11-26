@@ -36,7 +36,66 @@ app.use(
   })
 );
 
-app.get("/", (req, res) => res.json({ ok: true, service: "livraria-backend" }));
+// Middleware para logging de requests no MongoDB
+app.use(async (req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', async () => {
+    try {
+      // Usando require em vez de import para CommonJS
+      const { AuditService } = require('./services/auditService.js');
+      await AuditService.logAction(
+        'HTTP_REQUEST',
+        null,
+        'REQUEST',
+        null,
+        {
+          method: req.method,
+          url: req.url,
+          statusCode: res.statusCode,
+          duration: Date.now() - start,
+          userAgent: req.get('User-Agent')
+        },
+        req.user?.id,
+        req.ip
+      );
+    } catch (error) {
+      console.error('Erro ao logar request:', error);
+    }
+  });
+  
+  next();
+});
+
+app.get("/", (req, res) => res.json({ 
+  ok: true, 
+  service: "livraria-backend",
+  databases: {
+    mysql: "ativo",
+    mongodb: "ativo"
+  }
+}));
+
+// Health check dos bancos
+app.get("/health", async (req, res) => {
+  try {
+    const dbStatus = await db.testConnections();
+    res.json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      databases: {
+        mysql: dbStatus ? "connected" : "disconnected",
+        mongodb: dbStatus ? "connected" : "disconnected"
+      }
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "unhealthy",
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
+});
 
 app.use("/auth", authRoutes);
 app.use("/usuarios", usuariosRoutes);
@@ -49,7 +108,17 @@ app.use("/pedidos", pedidosRoutes);
 app.use("/categorias", categoriasRoutes);
 app.use("/logs", logsRoutes);
 
-const PORT = process.env.PORT;
+// Novas rotas
+app.use("/audit", auditRoutes);
+app.use("/cache", cacheRoutes);
+
+const PORT = process.env.PORT || 3000;
+
+// Logs para debug
+console.log('🔧 Configurações carregadas:');
+console.log('MySQL Host:', process.env.MYSQL_HOST);
+console.log('MongoDB URI:', process.env.MONGODB_URI ? '✅ Configurado' : '❌ Não configurado');
+console.log('Porta:', PORT);
 
 (async () => {
   try {

@@ -3,6 +3,7 @@ const { addLog } = require("../services/logService");
 
 async function list(req, res) {
   try {
+    // Buscar no MySQL (dados principais)
     const [rows] = await db.getPool().query(`
       SELECT 
         a.id,
@@ -32,6 +33,8 @@ async function list(req, res) {
 }
 
 async function create(req, res) {
+  const connection = await db.getPool().getConnection();
+  
   try {
     const { nome, bio } = req.body;
 

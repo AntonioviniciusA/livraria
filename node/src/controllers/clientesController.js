@@ -85,6 +85,8 @@ async function list(req, res) {
 }
 
 async function create(req, res) {
+  const connection = await db.getPool().getConnection();
+  
   try {
     const { nome, email, telefone, endereco } = req.body;
     const username = req.user.username;

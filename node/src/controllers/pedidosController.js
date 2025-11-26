@@ -15,6 +15,18 @@ async function create(req, res) {
   try {
     await conn.beginTransaction();
 
+    // Registrar início do pedido no MongoDB
+    const { AuditService } = await import('../services/auditService.js');
+    await AuditService.logAction(
+      'pedidos',
+      null,
+      'CREATE_START',
+      null,
+      { cliente_id, itens, userId: req.user.id },
+      req.user.id,
+      req.ip
+    );
+
     // gerar numero de negocio via função SQL
     const [r] = await conn.query("SELECT fn_gen_id('PED') as num");
     const numero_negocio = r[0].num;
@@ -26,6 +38,7 @@ async function create(req, res) {
     const pedido_id = ins.insertId;
 
     let total = 0.0;
+    const itensProcessados = [];
 
     for (const it of itens) {
       const [bookRows] = await conn.query(
@@ -68,6 +81,22 @@ async function create(req, res) {
       );
 
       total += preco * it.quantidade;
+      
+      // Registrar item processado para auditoria
+      itensProcessados.push({
+        livro_id: it.livro_id,
+        quantidade: it.quantidade,
+        preco_unitario: preco,
+        subtotal: preco * it.quantidade
+      });
+
+      // Atualizar cache de vendas no MongoDB
+      try {
+        const { CacheService } = await import('../services/cacheService.js');
+        await CacheService.updateBookSales(it.livro_id, it.quantidade);
+      } catch (cacheError) {
+        console.error('Erro ao atualizar cache de vendas:', cacheError);
+      }
     }
 
     await conn.query("UPDATE pedidos SET total = ? WHERE id = ?", [
@@ -77,10 +106,50 @@ async function create(req, res) {
 
     await conn.commit();
 
+    // Registrar sucesso do pedido no MongoDB
+    await AuditService.logAction(
+      'pedidos',
+      pedido_id.toString(),
+      'CREATE_SUCCESS',
+      null,
+      {
+        pedido_id,
+        numero_negocio,
+        cliente_id,
+        total,
+        itens: itensProcessados,
+        userId: req.user.id
+      },
+      req.user.id,
+      req.ip
+    );
+
     res.status(201).json({ id: pedido_id, numero_negocio, total });
   } catch (err) {
     await conn.rollback();
     console.error(err);
+
+    // Registrar falha do pedido no MongoDB
+    try {
+      const { AuditService } = await import('../services/auditService.js');
+      await AuditService.logAction(
+        'pedidos',
+        null,
+        'CREATE_FAILED',
+        null,
+        {
+          cliente_id,
+          itens,
+          error: err.message,
+          userId: req.user.id
+        },
+        req.user.id,
+        req.ip
+      );
+    } catch (auditError) {
+      console.error('Erro ao registrar falha do pedido:', auditError);
+    }
+
     res.status(400).json({ error: err.message });
   } finally {
     conn.release();
@@ -140,6 +209,26 @@ ORDER BY p.criado_em DESC;
         total_livros: parseInt(pedido.total_livros),
       },
     }));
+
+    // Registrar consulta de pedidos no MongoDB
+    try {
+      const { AuditService } = await import('../services/auditService.js');
+      await AuditService.logAction(
+        'pedidos',
+        'LIST',
+        'READ',
+        null,
+        {
+          total_pedidos: pedidos.length,
+          userId: req.user.id
+        },
+        req.user.id,
+        req.ip
+      );
+    } catch (auditError) {
+      console.error('Erro ao registrar consulta de pedidos:', auditError);
+    }
+
     res.status(200).json(pedidos);
   } catch (err) {
     console.error("Erro ao listar pedidos:", err);
